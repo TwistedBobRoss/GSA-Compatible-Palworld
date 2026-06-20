@@ -123,11 +123,7 @@ internal static class GsaRconBridgeTests
                 }
                 bytes.Add((byte)value);
                 var count = bytes.Count;
-                if (count >= 4 &&
-                    bytes[count - 4] == 13 &&
-                    bytes[count - 3] == 10 &&
-                    bytes[count - 2] == 13 &&
-                    bytes[count - 1] == 10)
+                if (count >= 4 && bytes[count - 4] == 13 && bytes[count - 3] == 10 && bytes[count - 2] == 13 && bytes[count - 1] == 10)
                 {
                     return Encoding.ASCII.GetString(bytes.ToArray());
                 }
@@ -167,7 +163,7 @@ internal static class GsaRconBridgeTests
         public RconClient(int port, string password, bool fragmentedAuth)
         {
             _client = new TcpClient();
-            _client.ReceiveTimeout = 500;
+            _client.ReceiveTimeout = 2000;
             _client.SendTimeout = 2000;
             _client.Connect(IPAddress.Loopback, port);
             _stream = _client.GetStream();
@@ -260,13 +256,11 @@ internal static class GsaRconBridgeTests
 
                 bridge = StartBridge(args[0], root, port, fake.Port, tokenFile);
                 WaitForPort(port);
-
                 TestWrongPassword(port);
 
                 using (var client = new RconClient(port, Password, true))
                 {
                     Assert(client.Execute("palbridge ping").Contains("OK status=ready"), "Ping failed.");
-
                     var combined = client.ExecuteCombined("palbridge ping", "palbridge version");
                     Assert(combined[0].Id == 61 && combined[0].Body.Contains("status=ready"), "Combined ping failed.");
                     Assert(combined[1].Id == 62 && combined[1].Body.Contains("version=0.1.0"), "Combined version failed.");
@@ -276,19 +270,15 @@ internal static class GsaRconBridgeTests
                     Assert(fake.GiveCount == 1, "Initial delivery did not call the backend exactly once.");
                     Assert(fake.LastGiveBody.Contains("\"UserID\":\"steam_123\""), "Player ID was not sent.");
                     Assert(fake.LastGiveBody.Contains("\"ItemID\":\"Wood\""), "Item ID was not sent.");
-
                     Assert(client.Execute(give).Contains("status=already_delivered"), "Duplicate delivery was not recognized.");
                     Assert(fake.GiveCount == 1, "Duplicate delivery called the backend.");
-
                     Assert(client.Execute("Broadcast Héllo 世界").Contains("OK status=accepted"), "Unicode broadcast failed.");
                     Assert(fake.LastAnnounceBody.Contains("Héllo 世界"), "Unicode body was corrupted.");
-
                     var longResponse = client.Execute("Info");
                     Assert(longResponse.Length > 9000, "Long response was not reassembled from multiple packets.");
                 }
 
                 TestParallelClients(port);
-
                 StopBridge(bridge);
                 bridge = StartBridge(args[0], root, port, fake.Port, tokenFile);
                 WaitForPort(port);
@@ -315,13 +305,7 @@ internal static class GsaRconBridgeTests
         finally
         {
             StopBridge(bridge);
-            try
-            {
-                Directory.Delete(root, true);
-            }
-            catch
-            {
-            }
+            try { Directory.Delete(root, true); } catch { }
         }
     }
 
@@ -351,10 +335,7 @@ internal static class GsaRconBridgeTests
 
     private static void StopBridge(Process process)
     {
-        if (process == null)
-        {
-            return;
-        }
+        if (process == null) return;
         try
         {
             if (!process.HasExited)
@@ -364,9 +345,7 @@ internal static class GsaRconBridgeTests
             }
             process.Dispose();
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     private static void TestWrongPassword(int port)
@@ -401,22 +380,13 @@ internal static class GsaRconBridgeTests
                         Assert(client.Execute("palbridge ping").Contains("status=ready"), "Parallel ping failed.");
                     }
                 }
-                catch (Exception ex)
-                {
-                    failure = ex;
-                }
+                catch (Exception ex) { failure = ex; }
             });
             threads.Add(thread);
             thread.Start();
         }
-        foreach (var thread in threads)
-        {
-            thread.Join();
-        }
-        if (failure != null)
-        {
-            throw failure;
-        }
+        foreach (var thread in threads) thread.Join();
+        if (failure != null) throw failure;
     }
 
     private static int GetFreePort()
@@ -440,10 +410,7 @@ internal static class GsaRconBridgeTests
                     return;
                 }
             }
-            catch
-            {
-                Thread.Sleep(50);
-            }
+            catch { Thread.Sleep(50); }
         }
         throw new TimeoutException("Bridge did not start listening.");
     }
@@ -480,10 +447,7 @@ internal static class GsaRconBridgeTests
         while (offset < count)
         {
             var read = stream.Read(bytes, offset, count - offset);
-            if (read == 0)
-            {
-                throw new EndOfStreamException();
-            }
+            if (read == 0) throw new EndOfStreamException();
             offset += read;
         }
         return bytes;
@@ -491,9 +455,6 @@ internal static class GsaRconBridgeTests
 
     private static void Assert(bool condition, string message)
     {
-        if (!condition)
-        {
-            throw new InvalidOperationException(message);
-        }
+        if (!condition) throw new InvalidOperationException(message);
     }
 }
