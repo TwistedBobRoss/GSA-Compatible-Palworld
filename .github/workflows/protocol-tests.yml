@@ -1,0 +1,32 @@
+name: Protocol compatibility tests
+
+on:
+  push:
+    branches:
+      - main
+      - codex/**
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-tests:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile bridge and test harness
+        shell: powershell
+        run: |
+          $framework = [Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()
+          $csc = Join-Path $framework 'csc.exe'
+          & $csc /nologo /optimize+ /out:GsaRconBridge.exe src\GsaRconBridge.cs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $csc /nologo /optimize+ /out:GsaRconBridgeTests.exe tests\GsaRconBridgeTests.cs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run Source RCON protocol suite
+        shell: powershell
+        run: |
+          .\GsaRconBridgeTests.exe .\GsaRconBridge.exe
