@@ -1,0 +1,158 @@
+{
+  "_version": 3,
+  "type": "custom",
+  "docker": {
+    "ports": {
+      "game": {
+        "port": "8211",
+        "multiplier": "1"
+      },
+      "query": {
+        "port": "27015",
+        "multiplier": "1"
+      },
+      "rcon": {
+        "port": "25575",
+        "multiplier": "1"
+      }
+    },
+    "image": {
+      "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
+      "tag": "{dynamic-os-tag}"
+    },
+    "envs": {
+      "PAL_DATA_DIR": "C:/serverfiles",
+      "PAL_GAME_PORT": "{gameserver.game_port}",
+      "PAL_QUERY_PORT": "{gameserver.query_port}",
+      "PAL_RCON_PORT": "{gameserver.rcon_port}",
+      "PAL_NATIVE_RCON_PORT": "25576",
+      "PAL_REST_PORT": "8212",
+      "PAL_MAX_PLAYERS": "{gameserver.slot_limit}",
+      "PAL_SERVER_NAME": "{gameserver.list_name}",
+      "PAL_SERVER_DESCRIPTION": "{config_parameter id=\"server_description\"}",
+      "PAL_SERVER_PASSWORD": "{config_parameter id=\"server_password\"}",
+      "PAL_ADMIN_PASSWORD": "{gameserver.rcon_password}",
+      "PAL_PUBLIC_IP": "{config_parameter id=\"public_ip\"}",
+      "PAL_PUBLIC_PORT": "{gameserver.game_port}",
+      "PAL_PUBLIC_LOBBY": "{config_parameter id=\"public_lobby\"}",
+      "PAL_LOG_FORMAT": "Text",
+      "PAL_CAPTURE_MODE": "pipe",
+      "PAL_BRIDGE_ENABLED": "true",
+      "PAL_BRIDGE_LISTEN_ADDRESS": "0.0.0.0",
+      "PAL_BRIDGE_PROXY_NATIVE": "true",
+      "PAL_BRIDGE_AUTH_EMPTY_RESPONSE": "false",
+      "PAL_BRIDGE_LEDGER": "C:/serverfiles/PalBridge/ledger",
+      "PAL_BRIDGE_LOG": "C:/serverfiles/Logs/PalBridge.log",
+      "PALDEFENDER_REST_URL": "http://127.0.0.1:17993",
+      "PALDEFENDER_TOKEN_FILE": "C:/serverfiles/Pal/Binaries/Win64/PalDefender/RESTAPI/Tokens/GSA.json",
+      "PAL_USE_BACKUP_SAVE_DATA": "{config_parameter id=\"use_backup_save_data\"}",
+      "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
+      "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
+      "PAL_EXTRA_ARGS": "{config_parameter id=\"extra_args\"}"
+    },
+    "mounts": {
+      "{container.home_root}/serverfiles": "c:/serverfiles"
+    }
+  },
+  "dir": {
+    "Serverfiles": {
+      "path": "\\serverfiles",
+      "create": false,
+      "type": "normal"
+    },
+    "Wrapper Logs": {
+      "path": "\\serverfiles\\Logs",
+      "create": true,
+      "type": "logs"
+    },
+    "Palworld Native Logs": {
+      "path": "\\serverfiles\\Pal\\Saved\\Logs",
+      "create": false,
+      "type": "logs"
+    }
+  },
+  "game": {
+    "server": {
+      "wipe": [
+        "\\serverfiles\\Pal\\Saved\\SaveGames"
+      ],
+      "backup": {
+        "Palworld Saved": "\\serverfiles\\Pal\\Saved",
+        "PalBridge State": "\\serverfiles\\PalBridge"
+      },
+      "command_control": {
+        "type": "rcon_1",
+        "commands": {
+          "save": "Save",
+          "broadcast": "Broadcast {message}",
+          "quit": "Shutdown 5 Server is shutting down"
+        }
+      },
+      "monitoring": {
+        "type": "container",
+        "recovery_mode": true
+      }
+    },
+    "type": "custom",
+    "config": {
+      "files": {
+        "PalWorldSettings.ini": {
+          "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+          "info": "Palworld settings. The wrapper preserves this file and only updates identity, ports, passwords, logging, REST, RCON, and slot values from GSA.",
+          "disable_edit": "0",
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},RCONEnabled=True,RCONPort=25576,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bIsShowJoinLeftMessage=True,bIsUseBackupSaveData={config_parameter id=\"use_backup_save_data\"})"
+        }
+      },
+      "parameters": {
+        "server_description": {
+          "name": "Server Description",
+          "info": "Description shown for the Palworld server.",
+          "type": "text",
+          "content": "Palworld server hosted with GameServerApp"
+        },
+        "server_password": {
+          "name": "Server Password",
+          "info": "Password required to join. Leave blank for public access.",
+          "type": "text",
+          "content": ""
+        },
+        "public_ip": {
+          "name": "Public IP",
+          "info": "Optional public IPv4 address. Leave blank to let Palworld detect it.",
+          "type": "text",
+          "content": ""
+        },
+        "public_lobby": {
+          "name": "Community/Public Lobby",
+          "info": "Adds -publiclobby so the server can appear in the community server list.",
+          "type": "boolean",
+          "content": "1"
+        },
+        "use_backup_save_data": {
+          "name": "Palworld Save Backups",
+          "info": "Enables Palworld's built-in rotating save backups. This increases disk activity.",
+          "type": "boolean",
+          "content": "1"
+        },
+        "update_on_start": {
+          "name": "Update Server On Start",
+          "info": "Runs SteamCMD app_update 2394010 before launching. Disable after testing if GSA handles updates separately.",
+          "type": "boolean",
+          "content": "1"
+        },
+        "validate_on_update": {
+          "name": "Validate During Update",
+          "info": "Adds SteamCMD validate. Useful for repair, but substantially increases startup time.",
+          "type": "boolean",
+          "content": "0"
+        },
+        "extra_args": {
+          "name": "Extra Launch Arguments",
+          "info": "Optional extra Palworld command-line arguments.",
+          "type": "text",
+          "content": ""
+        }
+      }
+    }
+  }
+}

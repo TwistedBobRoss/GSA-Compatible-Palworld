@@ -1,0 +1,6 @@
+*.exe
+*.log
+*.zip
+bin/
+obj/
+TestResults/

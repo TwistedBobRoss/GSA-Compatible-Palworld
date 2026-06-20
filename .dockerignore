@@ -1,0 +1,6 @@
+.git
+.github
+outputs
+work
+*.zip
+*.log

@@ -1,0 +1,3 @@
+Use GSA's "Import Custom Docker Container" template and select Windows.
+
+docker run --name palworld-gsa-logging -p 8211:8211/udp -p 27015:27015/udp -p 25575:25575/tcp -v palworld-serverfiles:C:/serverfiles -e PAL_DATA_DIR="C:/serverfiles" -e PAL_GAME_PORT="8211" -e PAL_QUERY_PORT="27015" -e PAL_RCON_PORT="25575" -e PAL_NATIVE_RCON_PORT="25576" -e PAL_REST_PORT="8212" -e PAL_MAX_PLAYERS="32" -e PAL_SERVER_NAME="Palworld Server" -e PAL_ADMIN_PASSWORD="CHANGE-ME" -e PAL_LOG_FORMAT="Text" -e PAL_CAPTURE_MODE="pipe" -e PAL_BRIDGE_ENABLED="true" -e PAL_BRIDGE_PROXY_NATIVE="true" ghcr.io/twistedbobross/gsa-compatible-palworld:ltsc2022
