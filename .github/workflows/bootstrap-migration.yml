@@ -1,0 +1,43 @@
+name: Bootstrap migration
+
+on:
+  push:
+    branches:
+      - codex/initial-build
+    paths:
+      - ".bootstrap/**"
+      - ".github/workflows/bootstrap-migration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  expand:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Expand project archive
+        shell: powershell
+        run: |
+          $parts = Get-ChildItem .bootstrap\part*.txt | Sort-Object Name
+          $base64 = ($parts | ForEach-Object { Get-Content -Raw $_.FullName }) -join ""
+          [IO.File]::WriteAllBytes(
+            "project.zip",
+            [Convert]::FromBase64String($base64)
+          )
+          Expand-Archive -LiteralPath project.zip -DestinationPath . -Force
+          Remove-Item -LiteralPath project.zip -Force
+          Remove-Item -LiteralPath .bootstrap -Recurse -Force
+          Remove-Item -LiteralPath .github\workflows\bootstrap-migration.yml -Force
+
+      - name: Commit expanded project
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Expand initial project migration"
+          git push origin HEAD:codex/initial-build
