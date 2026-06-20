@@ -15,7 +15,7 @@ jobs:
   expand:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -32,6 +32,7 @@ jobs:
           Remove-Item -LiteralPath project.zip -Force
           Remove-Item -LiteralPath .bootstrap -Recurse -Force
           Remove-Item -LiteralPath .github\workflows\bootstrap-migration.yml -Force
+          Remove-Item -LiteralPath .github\workflows\protocol-tests.yml -Force
 
       - name: Commit expanded project
         shell: powershell
