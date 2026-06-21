@@ -20,17 +20,11 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.windows_version }}
-    runs-on: ${{ matrix.runner }}
+    name: Build ltsc2022
+    runs-on: windows-2022
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: windows-2019
-            windows_version: ltsc2019
-          - runner: windows-2022
-            windows_version: ltsc2022
+    env:
+      WINDOWS_VERSION: ltsc2022
 
     steps:
       - name: Checkout
@@ -67,8 +61,6 @@ jobs:
 
       - name: Build Windows image
         shell: powershell
-        env:
-          WINDOWS_VERSION: ${{ matrix.windows_version }}
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
           $image = "ghcr.io/${repository}"
@@ -80,8 +72,6 @@ jobs:
 
       - name: Smoke test packaged files
         shell: powershell
-        env:
-          WINDOWS_VERSION: ${{ matrix.windows_version }}
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
           $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION"
@@ -94,8 +84,6 @@ jobs:
 
       - name: Push Windows image
         shell: powershell
-        env:
-          WINDOWS_VERSION: ${{ matrix.windows_version }}
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
           $image = "ghcr.io/${repository}"

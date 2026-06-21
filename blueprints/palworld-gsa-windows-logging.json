@@ -18,7 +18,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "{dynamic-os-tag}"
+      "tag": "ltsc2022"
     },
     "envs": {
       "PAL_DATA_DIR": "C:/serverfiles",

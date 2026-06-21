@@ -139,10 +139,9 @@ The wrapper preserves the existing `PalWorldSettings.ini` and patches only:
 
 ## Build
 
-Publish both Windows base versions so GSA's documented `{dynamic-os-tag}` image tag can select the host-compatible image:
+Build and publish the Windows Server 2022 image used by the included blueprint:
 
 ```powershell
-docker build --build-arg WINDOWS_VERSION=ltsc2019 -t ghcr.io/twistedbobross/gsa-compatible-palworld:ltsc2019 .
 docker build --build-arg WINDOWS_VERSION=ltsc2022 -t ghcr.io/twistedbobross/gsa-compatible-palworld:ltsc2022 .
 ```
 
