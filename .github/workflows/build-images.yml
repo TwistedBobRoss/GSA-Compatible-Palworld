@@ -87,7 +87,10 @@ jobs:
           $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION"
           docker run --rm --entrypoint powershell.exe $image `
             -NoLogo -NoProfile -Command `
-            '$required=@("C:\PalConHost.exe","C:\GsaRconBridge.exe","C:\Start.ps1","C:\PalBridgeMod\Scripts\main.lua"); foreach($path in $required){if(-not(Test-Path -LiteralPath $path)){throw "Missing packaged file: $path"}}'
+            "if (-not (Test-Path C:\PalConHost.exe)) { exit 11 }; if (-not (Test-Path C:\GsaRconBridge.exe)) { exit 12 }; if (-not (Test-Path C:\Start.ps1)) { exit 13 }; if (-not (Test-Path C:\PalBridgeMod\Scripts\main.lua)) { exit 14 }"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Packaged-file smoke test failed with exit code $LASTEXITCODE."
+          }
 
       - name: Push Windows image
         shell: powershell
