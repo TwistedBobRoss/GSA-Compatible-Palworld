@@ -278,6 +278,16 @@ internal static class GsaRconBridgeTests
             return ReadResponseBody(60);
         }
 
+        public string ExecuteSingle(string command)
+        {
+            var bytes = EncodePacket(63, 2, command);
+            _stream.Write(bytes, 0, bytes.Length);
+            _stream.Flush();
+            var response = ReadPacket(_stream);
+            Assert(response.Id == 63 && response.Type == 0, "Expected one Source RCON response packet.");
+            return response.Body;
+        }
+
         public Packet[] ExecuteCombined(string first, string second)
         {
             var one = EncodePacket(61, 2, first);
@@ -481,7 +491,7 @@ internal static class GsaRconBridgeTests
                 {
                     using (var client = new RconClient(port, Password, false))
                     {
-                        Assert(client.Execute("palbridge ping").Contains("status=ready"), "Parallel ping failed.");
+                        Assert(client.ExecuteSingle("palbridge ping").Contains("status=ready"), "Parallel ping failed.");
                     }
                 }
                 catch (Exception ex)
