@@ -39,9 +39,8 @@ internal static class GsaRconBridge
     private static string _palRestUrl;
     private static string _palRestUser;
     private static string _palRestPassword;
-    private static string _palDefenderUrl;
-    private static string _palDefenderTokenFile;
-    private static string _palDefenderToken;
+    private static string _queueDirectory;
+    private static int _deliveryTimeoutSeconds;
     private static string _ledgerDirectory;
     private static string _logPath;
     private static StreamWriter _logWriter;
@@ -58,12 +57,32 @@ internal static class GsaRconBridge
     private sealed class DeliveryRecord
     {
         public string DeliveryId;
+        public string CharacterId;
         public string PlayerId;
         public string ItemId;
         public int Count;
         public string Status;
         public string Result;
         public string UpdatedUtc;
+    }
+
+    private sealed class QueueResponse
+    {
+        public string DeliveryId;
+        public string CharacterId;
+        public string PlayerId;
+        public string ItemId;
+        public int Count;
+        public string Status;
+        public string Message;
+        public string ResultCode;
+    }
+
+    private sealed class OnlinePlayer
+    {
+        public string UserId;
+        public string PlayerId;
+        public string Name;
     }
 
     private sealed class HttpResult
@@ -80,6 +99,9 @@ internal static class GsaRconBridge
         {
             LoadConfiguration();
             Directory.CreateDirectory(_ledgerDirectory);
+            Directory.CreateDirectory(Path.Combine(_queueDirectory, "in"));
+            Directory.CreateDirectory(Path.Combine(_queueDirectory, "work"));
+            Directory.CreateDirectory(Path.Combine(_queueDirectory, "out"));
             OpenLog();
 
             Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs eventArgs)
@@ -152,11 +174,8 @@ internal static class GsaRconBridge
         _palRestUrl = Env("PAL_REST_URL", "http://127.0.0.1:8212").TrimEnd('/');
         _palRestUser = Env("PAL_REST_USER", "admin");
         _palRestPassword = Env("PAL_ADMIN_PASSWORD", "");
-        _palDefenderUrl = Env("PALDEFENDER_REST_URL", "http://127.0.0.1:17993").TrimEnd('/');
-        _palDefenderTokenFile = Env(
-            "PALDEFENDER_TOKEN_FILE",
-            @"C:\serverfiles\Pal\Binaries\Win64\PalDefender\RESTAPI\Tokens\GSA.json");
-        _palDefenderToken = Env("PALDEFENDER_TOKEN", "");
+        _queueDirectory = Env("PAL_BRIDGE_QUEUE", @"C:\serverfiles\PalBridge\queue");
+        _deliveryTimeoutSeconds = IntEnv("PAL_BRIDGE_DELIVERY_TIMEOUT", 10, 1, 60);
         _ledgerDirectory = Env("PAL_BRIDGE_LEDGER", @"C:\serverfiles\PalBridge\ledger");
         _logPath = Env("PAL_BRIDGE_LOG", @"C:\serverfiles\Logs\PalBridge.log");
 
@@ -285,12 +304,12 @@ internal static class GsaRconBridge
         if (clean.Equals("palbridge ping", StringComparison.OrdinalIgnoreCase) ||
             clean.Equals("ping", StringComparison.OrdinalIgnoreCase))
         {
-            return "OK status=ready protocol=source-rcon";
+            return "OK status=ready protocol=source-rcon delivery=palbridge-mod";
         }
 
         if (clean.Equals("palbridge version", StringComparison.OrdinalIgnoreCase))
         {
-            return "OK version=0.1.0";
+            return "OK version=0.2.0";
         }
 
         if (clean.StartsWith("palbridge give ", StringComparison.OrdinalIgnoreCase))
@@ -347,14 +366,16 @@ internal static class GsaRconBridge
         }
 
         string deliveryId;
+        string characterId;
         string playerId;
         string itemId;
         string countText;
         if (!arguments.TryGetValue("delivery", out deliveryId) ||
+            !arguments.TryGetValue("character", out characterId) ||
             !arguments.TryGetValue("player", out playerId) ||
             !arguments.TryGetValue("item", out itemId))
         {
-            return "ERROR code=missing_argument message=delivery, player, and item are required";
+            return "ERROR code=missing_argument message=delivery, character, player, and item are required";
         }
 
         if (!arguments.TryGetValue("count", out countText))
@@ -364,21 +385,31 @@ internal static class GsaRconBridge
 
         int count;
         if (!SafeId.IsMatch(deliveryId) ||
+            !SafeId.IsMatch(characterId) ||
             !SafeId.IsMatch(playerId) ||
             !SafeItem.IsMatch(itemId) ||
             !int.TryParse(countText, NumberStyles.None, CultureInfo.InvariantCulture, out count) ||
             count < 1 ||
             count > 1000000)
         {
-            return "ERROR delivery=" + OneLine(deliveryId) + " code=invalid_argument message=Invalid delivery, player, item, or count";
+            return "ERROR delivery=" + OneLine(deliveryId) + " code=invalid_argument message=Invalid delivery, character, player, item, or count";
         }
 
         lock (DeliveryLock)
         {
             var path = GetDeliveryPath(deliveryId);
+            var queueKey = Path.GetFileNameWithoutExtension(path);
+            var requestPath = Path.Combine(_queueDirectory, "in", queueKey + ".request");
+            var workPath = Path.Combine(_queueDirectory, "work", queueKey + ".request");
+            var responsePath = Path.Combine(_queueDirectory, "out", queueKey + ".response");
             var existing = ReadDelivery(path);
             if (existing != null)
             {
+                if (!DeliveryMatches(existing, deliveryId, characterId, playerId, itemId, count))
+                {
+                    return "ERROR delivery=" + deliveryId + " code=delivery_conflict message=Delivery ID was already used with different parameters";
+                }
+
                 if (string.Equals(existing.Status, "delivered", StringComparison.OrdinalIgnoreCase))
                 {
                     return "OK delivery=" + deliveryId + " status=already_delivered";
@@ -387,13 +418,23 @@ internal static class GsaRconBridge
                 if (string.Equals(existing.Status, "pending", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(existing.Status, "uncertain", StringComparison.OrdinalIgnoreCase))
                 {
-                    return "ERROR delivery=" + deliveryId + " code=delivery_uncertain message=Manual reconciliation required before retry";
+                    var recovered = TryCompleteFromQueueResponse(path, existing, responsePath);
+                    if (recovered != null)
+                    {
+                        return recovered;
+                    }
+
+                    if (File.Exists(workPath) || string.Equals(existing.Status, "uncertain", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return "ERROR delivery=" + deliveryId + " code=delivery_uncertain message=Manual reconciliation required before retry";
+                    }
                 }
             }
 
             var record = new DeliveryRecord
             {
                 DeliveryId = deliveryId,
+                CharacterId = characterId,
                 PlayerId = playerId,
                 ItemId = itemId,
                 Count = count,
@@ -403,58 +444,380 @@ internal static class GsaRconBridge
             };
             WriteDelivery(path, record);
 
-            var payload = new Dictionary<string, object>
-            {
-                { "UserID", playerId },
-                {
-                    "Items",
-                    new object[]
-                    {
-                        new Dictionary<string, object>
-                        {
-                            { "ItemID", itemId },
-                            { "Count", count }
-                        }
-                    }
-                }
-            };
-
-            var token = LoadPalDefenderToken();
-            if (string.IsNullOrWhiteSpace(token))
+            OnlinePlayer online;
+            string identityCode;
+            string identityError;
+            if (!TryValidateOnlineIdentity(characterId, playerId, out online, out identityCode, out identityError))
             {
                 record.Status = "failed";
-                record.Result = "PalDefender token is unavailable";
+                record.Result = identityError;
                 record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
                 WriteDelivery(path, record);
-                return "ERROR delivery=" + deliveryId + " code=backend_auth_unavailable message=PalDefender token is unavailable";
+                return "ERROR delivery=" + deliveryId + " code=" + identityCode + " message=" + OneLine(identityError);
             }
 
-            var result = SendHttp(
-                "POST",
-                _palDefenderUrl + "/v1/pdapi/give",
-                Json.Serialize(payload),
-                "Bearer " + token);
-
-            if (result.ReachedServer && result.StatusCode == 200 && PalDefenderSucceeded(result.Body))
+            DeleteIfExists(responsePath);
+            if (File.Exists(workPath))
             {
-                record.Status = "delivered";
-                record.Result = result.Body;
+                record.Status = "uncertain";
+                record.Result = "A previous mod operation for this delivery is still marked in progress.";
                 record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
                 WriteDelivery(path, record);
-                Log("DELIVERY", "OK delivery=" + deliveryId + " player=" + playerId + " item=" + itemId + " count=" + count + ".");
-                return "OK delivery=" + deliveryId + " status=delivered";
+                return "ERROR delivery=" + deliveryId + " code=delivery_uncertain message=Previous mod operation is still in progress";
             }
 
-            var definitelyRejected = result.ReachedServer && result.StatusCode >= 400 && result.StatusCode < 500;
-            record.Status = definitelyRejected ? "failed" : "uncertain";
-            record.Result = result.Error + " " + result.Body;
+            WriteQueueRequest(
+                requestPath,
+                deliveryId,
+                characterId,
+                playerId,
+                itemId,
+                count,
+                online.Name);
+
+            var deadline = DateTime.UtcNow.AddSeconds(_deliveryTimeoutSeconds);
+            while (DateTime.UtcNow < deadline)
+            {
+                var completed = TryCompleteFromQueueResponse(path, record, responsePath);
+                if (completed != null)
+                {
+                    return completed;
+                }
+                Thread.Sleep(100);
+            }
+
+            if (File.Exists(requestPath) && !File.Exists(workPath))
+            {
+                DeleteIfExists(requestPath);
+                record.Status = "failed";
+                record.Result = "The PalBridge mod did not claim the request before timeout.";
+            }
+            else
+            {
+                record.Status = "uncertain";
+                record.Result = "The PalBridge mod claimed the request but no final response was received.";
+            }
             record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             WriteDelivery(path, record);
 
-            var code = definitelyRejected ? "backend_rejected" : "backend_uncertain";
+            var code = string.Equals(record.Status, "uncertain", StringComparison.OrdinalIgnoreCase)
+                ? "delivery_uncertain"
+                : "mod_unavailable";
             Log("DELIVERY", "ERROR delivery=" + deliveryId + " code=" + code + ".");
-            return "ERROR delivery=" + deliveryId + " code=" + code + " message=" +
-                   OneLine(string.IsNullOrWhiteSpace(result.Error) ? result.Body : result.Error);
+            return "ERROR delivery=" + deliveryId + " code=" + code + " message=" + OneLine(record.Result);
+        }
+    }
+
+    private static bool TryValidateOnlineIdentity(
+        string characterId,
+        string playerId,
+        out OnlinePlayer matched,
+        out string errorCode,
+        out string error)
+    {
+        matched = null;
+        errorCode = "identity_not_online";
+        error = "";
+        var result = SendHttp(
+            "GET",
+            _palRestUrl + "/v1/api/players",
+            null,
+            BasicAuthorization(_palRestUser, _palRestPassword));
+        if (!result.ReachedServer || result.StatusCode < 200 || result.StatusCode >= 300)
+        {
+            errorCode = "pal_rest_unavailable";
+            error = "Palworld REST player list is unavailable.";
+            return false;
+        }
+
+        try
+        {
+            var root = Json.DeserializeObject(result.Body) as Dictionary<string, object>;
+            object playersValue;
+            var players = root != null && root.TryGetValue("players", out playersValue)
+                ? playersValue as object[]
+                : null;
+            if (players == null)
+            {
+                errorCode = "pal_rest_invalid";
+                error = "Palworld REST returned no player list.";
+                return false;
+            }
+
+            OnlinePlayer characterMatch = null;
+            foreach (var item in players)
+            {
+                var player = item as Dictionary<string, object>;
+                if (player == null)
+                {
+                    continue;
+                }
+
+                object userValue;
+                object characterValue;
+                object nameValue;
+                player.TryGetValue("userId", out userValue);
+                player.TryGetValue("playerId", out characterValue);
+                player.TryGetValue("name", out nameValue);
+                var candidate = new OnlinePlayer
+                {
+                    UserId = Convert.ToString(userValue, CultureInfo.InvariantCulture),
+                    PlayerId = Convert.ToString(characterValue, CultureInfo.InvariantCulture),
+                    Name = Convert.ToString(nameValue, CultureInfo.InvariantCulture)
+                };
+
+                if (!IdentifiersEqual(candidate.PlayerId, characterId))
+                {
+                    continue;
+                }
+
+                characterMatch = candidate;
+                if (PlatformIdentifiersEqual(candidate.UserId, playerId))
+                {
+                    matched = candidate;
+                    return true;
+                }
+            }
+
+            if (characterMatch == null)
+            {
+                errorCode = "character_offline";
+                error = "Character is not online.";
+            }
+            else
+            {
+                errorCode = "identity_mismatch";
+                error = "Character is online, but it belongs to a different platform account.";
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            errorCode = "pal_rest_invalid";
+            error = "Unable to parse Palworld REST player list: " + ex.Message;
+            return false;
+        }
+    }
+
+    private static string TryCompleteFromQueueResponse(
+        string ledgerPath,
+        DeliveryRecord record,
+        string responsePath)
+    {
+        if (!File.Exists(responsePath))
+        {
+            return null;
+        }
+
+        QueueResponse response;
+        try
+        {
+            response = ReadQueueResponse(responsePath);
+        }
+        catch (Exception ex)
+        {
+            record.Status = "uncertain";
+            record.Result = "Invalid mod response: " + ex.Message;
+            record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            WriteDelivery(ledgerPath, record);
+            return "ERROR delivery=" + record.DeliveryId + " code=invalid_mod_response message=" + OneLine(ex.Message);
+        }
+
+        if (!string.Equals(response.DeliveryId, record.DeliveryId, StringComparison.Ordinal) ||
+            !IdentifiersEqual(response.CharacterId, record.CharacterId) ||
+            !IdentifiersEqual(response.PlayerId, record.PlayerId) ||
+            !string.Equals(response.ItemId, record.ItemId, StringComparison.OrdinalIgnoreCase) ||
+            response.Count != record.Count)
+        {
+            record.Status = "uncertain";
+            record.Result = "Mod response identity or item fields did not match the ledger.";
+            record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            WriteDelivery(ledgerPath, record);
+            return "ERROR delivery=" + record.DeliveryId + " code=invalid_mod_response message=Response did not match delivery ledger";
+        }
+
+        DeleteIfExists(responsePath);
+        record.Result = response.ResultCode + " " + response.Message;
+        record.UpdatedUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        if (string.Equals(response.Status, "delivered", StringComparison.OrdinalIgnoreCase))
+        {
+            record.Status = "delivered";
+            WriteDelivery(ledgerPath, record);
+            Log(
+                "DELIVERY",
+                "OK delivery=" + record.DeliveryId +
+                " character=" + record.CharacterId +
+                " player=" + record.PlayerId +
+                " item=" + record.ItemId +
+                " count=" + record.Count + ".");
+            return "OK delivery=" + record.DeliveryId + " status=delivered";
+        }
+
+        if (string.Equals(response.Status, "uncertain", StringComparison.OrdinalIgnoreCase))
+        {
+            record.Status = "uncertain";
+            WriteDelivery(ledgerPath, record);
+            return "ERROR delivery=" + record.DeliveryId +
+                   " code=delivery_uncertain message=" + OneLine(response.Message);
+        }
+
+        record.Status = "failed";
+        WriteDelivery(ledgerPath, record);
+        var code = string.IsNullOrWhiteSpace(response.ResultCode) ? "mod_rejected" : response.ResultCode;
+        return "ERROR delivery=" + record.DeliveryId + " code=" + OneLine(code) +
+               " message=" + OneLine(response.Message);
+    }
+
+    private static void WriteQueueRequest(
+        string path,
+        string deliveryId,
+        string characterId,
+        string playerId,
+        string itemId,
+        int count,
+        string playerName)
+    {
+        var content =
+            "version=1\r\n" +
+            "delivery=" + deliveryId + "\r\n" +
+            "character=" + characterId + "\r\n" +
+            "player=" + playerId + "\r\n" +
+            "item=" + itemId + "\r\n" +
+            "count=" + count.ToString(CultureInfo.InvariantCulture) + "\r\n" +
+            "name=" + SafeQueueText(playerName) + "\r\n";
+        WriteAtomicText(path, content);
+    }
+
+    private static QueueResponse ReadQueueResponse(string path)
+    {
+        var values = ParseKeyValueFile(path);
+        int count;
+        if (!values.ContainsKey("delivery") ||
+            !values.ContainsKey("character") ||
+            !values.ContainsKey("player") ||
+            !values.ContainsKey("item") ||
+            !values.ContainsKey("status") ||
+            !int.TryParse(values.ContainsKey("count") ? values["count"] : "", out count))
+        {
+            throw new InvalidDataException("Required response fields are missing.");
+        }
+
+        return new QueueResponse
+        {
+            DeliveryId = values["delivery"],
+            CharacterId = values["character"],
+            PlayerId = values["player"],
+            ItemId = values["item"],
+            Count = count,
+            Status = values["status"],
+            Message = values.ContainsKey("message") ? values["message"] : "",
+            ResultCode = values.ContainsKey("code") ? values["code"] : ""
+        };
+    }
+
+    private static Dictionary<string, string> ParseKeyValueFile(string path)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in File.ReadAllLines(path, Encoding.UTF8))
+        {
+            var split = line.IndexOf('=');
+            if (split > 0)
+            {
+                values[line.Substring(0, split).Trim()] = line.Substring(split + 1).Trim();
+            }
+        }
+        return values;
+    }
+
+    private static void WriteAtomicText(string path, string content)
+    {
+        var temporary = path + ".tmp";
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+        File.WriteAllText(temporary, content, new UTF8Encoding(false));
+        if (File.Exists(path))
+        {
+            File.Replace(temporary, path, null);
+        }
+        else
+        {
+            File.Move(temporary, path);
+        }
+    }
+
+    private static bool DeliveryMatches(
+        DeliveryRecord record,
+        string deliveryId,
+        string characterId,
+        string playerId,
+        string itemId,
+        int count)
+    {
+        return string.Equals(record.DeliveryId, deliveryId, StringComparison.Ordinal) &&
+               IdentifiersEqual(record.CharacterId, characterId) &&
+               IdentifiersEqual(record.PlayerId, playerId) &&
+               string.Equals(record.ItemId, itemId, StringComparison.OrdinalIgnoreCase) &&
+               record.Count == count;
+    }
+
+    private static bool IdentifiersEqual(string left, string right)
+    {
+        return string.Equals(
+            NormalizeIdentifier(left),
+            NormalizeIdentifier(right),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool PlatformIdentifiersEqual(string left, string right)
+    {
+        if (IdentifiersEqual(left, right))
+        {
+            return true;
+        }
+
+        return string.Equals(
+            StripKnownPlatformPrefix(NormalizeIdentifier(left)),
+            StripKnownPlatformPrefix(NormalizeIdentifier(right)),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string StripKnownPlatformPrefix(string value)
+    {
+        var prefixes = new[] { "steam_", "epic_", "eos_", "xbox_", "psn_" };
+        foreach (var prefix in prefixes)
+        {
+            if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return value.Substring(prefix.Length);
+            }
+        }
+        return value;
+    }
+
+    private static string NormalizeIdentifier(string value)
+    {
+        return (value ?? "").Trim().Replace("-", "").Replace("{", "").Replace("}", "");
+    }
+
+    private static string SafeQueueText(string value)
+    {
+        return OneLine(value).Replace("=", "_");
+    }
+
+    private static void DeleteIfExists(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
         }
     }
 
@@ -661,55 +1024,6 @@ internal static class GsaRconBridge
             tokens.Add(current.ToString());
         }
         return tokens;
-    }
-
-    private static string LoadPalDefenderToken()
-    {
-        if (!string.IsNullOrWhiteSpace(_palDefenderToken))
-        {
-            return _palDefenderToken.Trim();
-        }
-
-        try
-        {
-            if (!File.Exists(_palDefenderTokenFile))
-            {
-                return "";
-            }
-
-            var content = File.ReadAllText(_palDefenderTokenFile, Encoding.UTF8).Trim();
-            if (!content.StartsWith("{", StringComparison.Ordinal))
-            {
-                return content;
-            }
-
-            var parsed = Json.Deserialize<Dictionary<string, object>>(content);
-            object token;
-            return parsed != null && parsed.TryGetValue("Token", out token)
-                ? Convert.ToString(token, CultureInfo.InvariantCulture)
-                : "";
-        }
-        catch (Exception ex)
-        {
-            Log("ERROR", "Unable to load PalDefender token: " + ex.Message);
-            return "";
-        }
-    }
-
-    private static bool PalDefenderSucceeded(string body)
-    {
-        try
-        {
-            var response = Json.Deserialize<Dictionary<string, object>>(body);
-            object errors;
-            return response != null &&
-                   response.TryGetValue("Errors", out errors) &&
-                   Convert.ToInt32(errors, CultureInfo.InvariantCulture) == 0;
-        }
-        catch
-        {
-            return false;
-        }
     }
 
     private static HttpResult SendHttp(string method, string url, string json, string authorization)

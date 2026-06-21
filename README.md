@@ -42,9 +42,9 @@ GSA does **not** publicly document a custom chat/player event tag grammar for bl
 It preserves raw output and writes normalized fallback lines using the native formats commonly emitted by Palworld:
 
 ```text
-[2026-06-19 12:00:00] [CHAT] <PlayerName> message
-[2026-06-19 12:00:00] [LOG] PlayerName joined the server. (User id: ...)
-[2026-06-19 12:00:00] [LOG] PlayerName left the server. (User id: ...)
+[2026-06-20 12:00:00Z] [CHAT] <PlayerName> message
+[2026-06-20 12:00:00Z] [LOG] PlayerName joined the server. (User id: steam_..., Player id: AFAFD830...)
+[2026-06-20 12:00:00Z] [LOG] PlayerName left the server. (User id: steam_...)
 ```
 
 For the best chance of GSA dashboard chat/player indexing, create or import this as a **Palworld** blueprint rather than as an unrelated custom game. The separate log files remain available even if GSA's private Palworld parser does not ingest a particular line.
@@ -53,9 +53,23 @@ For the best chance of GSA dashboard chat/player indexing, create or import this
 
 Palworld's REST API is enabled only on the container-internal port `8212`. It is deliberately **not** published to the host because Pocketpair warns that the REST API is not designed for direct Internet exposure. Every ten seconds, `PalConHost` checks `/v1/api/players` over `127.0.0.1`.
 
-If the Windows console omits a join or leave line, the wrapper synthesizes the corresponding native-style `[LOG]` line. REST does not expose chat history, so chat capture depends on the command server printing `[CHAT]` lines.
+If the Windows console omits a join or leave line, the wrapper synthesizes the corresponding native-style `[LOG]` line. The current REST response includes both the platform `userId` and Palworld `playerId`, so the synthesized join contains the character identity GSA needs.
 
 GSA command/control remains on the mapped RCON port. Pocketpair currently marks RCON as deprecated, so the wrapper independently uses the internal REST API for save and shutdown handling.
+
+## Packaged Chat and Delivery Mod
+
+The image packages our `PalBridge` Lua mod and installs a checksum-pinned official UE4SS build into Palworld's `Win64` directory on first start. The mod:
+
+- hooks `PalPlayerState:EnterChat_Receive`
+- emits native-style `[CHAT]` lines to Docker stdout
+- writes chat/character identity audit lines under `\serverfiles\Logs`
+- consumes item requests from `\serverfiles\PalBridge\queue`
+- grants through Palworld's server-side `AddItem_ServerInternal` function
+
+No PalGuard or PalDefender installation is required. UE4SS's optional debugging and cheat mods are disabled; only `PalBridge` is enabled.
+
+The exact GSA account-linking validation is in [`GSA-CONNECT-CODE.md`](GSA-CONNECT-CODE.md). GSA does not publish its Palworld parser expressions, so a live `!getconnectcode` test remains required before production cutover.
 
 ## Capture Modes
 
@@ -78,7 +92,7 @@ Implemented gateway routes:
 ```text
 palbridge ping
 palbridge version
-palbridge give --delivery "{delivery.id}" --player "{player.id}" --item "ITEM_ID" --count 1
+palbridge give --delivery "{delivery.id}" --character "{character.id}" --player "{player.id}" --item "ITEM_ID" --count 1
 Save
 Broadcast message
 Shutdown 5 message
@@ -86,7 +100,7 @@ Info
 ShowPlayers
 ```
 
-The `give` route currently targets PalDefender's loopback-only `/v1/pdapi/give` contract. Our own server mod can implement the same backend contract later without changing GSA Shop Packs.
+The `give` route first checks Palworld REST and requires `{character.id}` and `{player.id}` to identify the same online player. It then queues the operation to the packaged mod. Character names are never used as delivery targets.
 
 Every delivery is persisted under:
 
@@ -159,7 +173,10 @@ Do not replace the existing production server until a temporary copy passes:
 - The server remains stable through an extended test using pipe capture.
 - GSA authenticates to `GsaRconBridge` using the blueprint's `rcon_1` implementation.
 - `palbridge ping` works from GSA's command console.
-- A Shop Pack command containing `{delivery.id}` and `{player.id}` delivers once.
+- A player can type `!getconnectcode` twice and GSA attributes both messages to the correct character.
+- GSA returns a connect code and the Community website links the intended account.
+- A Shop Pack command containing `{delivery.id}`, `{character.id}`, and `{player.id}` delivers once.
+- A mismatched character/platform pair is rejected.
 - Retrying the same delivery returns `already_delivered` without granting it again.
 
 ## Documentation References
@@ -167,8 +184,11 @@ Do not replace the existing production server until a temporary copy passes:
 - [GameServerApp: Create and manage blueprints](https://docs.gameserverapp.com/dashboard/blueprints/create_and_manage_blueprints/)
 - [GameServerApp: Create Docker blueprint](https://docs.gameserverapp.com/dashboard/blueprints/how-to/create_custom_blueprint/)
 - [GameServerApp: Blueprint variables](https://docs.gameserverapp.com/dashboard/blueprints/variables/)
+- [GameServerApp: Connect game accounts](https://docs.gameserverapp.com/dashboard/community/website/)
+- [GameServerApp: Delivery Builder variables](https://docs.gameserverapp.com/dashboard/delivery_builder/variables/)
 - [Pocketpair: Palworld launch arguments](https://docs.palworldgame.com/settings-and-operation/arguments/)
 - [Pocketpair: Palworld configuration parameters](https://docs.palworldgame.com/settings-and-operation/configuration/)
-- [Pocketpair: Palworld REST API](https://docs.palworldgame.com/api/rest-api/palwold-rest-api/)
+- [Pocketpair: Palworld REST player list](https://docs.palworldgame.com/api/rest-api/players/)
 - [Pocketpair: Palworld RCON deprecation](https://docs.palworldgame.com/api/rcon/)
+- [UE4SS project](https://github.com/UE4SS-RE/RE-UE4SS)
 - [Microsoft: Windows Pseudoconsole](https://learn.microsoft.com/windows/console/creating-a-pseudoconsole-session)

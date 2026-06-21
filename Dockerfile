@@ -26,10 +26,16 @@ ENV PAL_DATA_DIR="C:\serverfiles" `
     PAL_BRIDGE_LISTEN_ADDRESS="0.0.0.0" `
     PAL_BRIDGE_PROXY_NATIVE="true" `
     PAL_BRIDGE_AUTH_EMPTY_RESPONSE="false" `
+    PAL_BRIDGE_QUEUE="C:\serverfiles\PalBridge\queue" `
+    PAL_BRIDGE_DELIVERY_TIMEOUT="10" `
     PAL_BRIDGE_LEDGER="C:\serverfiles\PalBridge\ledger" `
     PAL_BRIDGE_LOG="C:\serverfiles\Logs\PalBridge.log" `
-    PALDEFENDER_REST_URL="http://127.0.0.1:17993" `
-    PALDEFENDER_TOKEN_FILE="C:\serverfiles\Pal\Binaries\Win64\PalDefender\RESTAPI\Tokens\GSA.json" `
+    PAL_MOD_ENABLED="true" `
+    PAL_UE4SS_RELEASE="experimental-latest" `
+    PAL_UE4SS_URL="https://github.com/UE4SS-RE/RE-UE4SS/releases/download/experimental-latest/UE4SS_v3.0.1-971-g9ec5ece7.zip" `
+    PAL_UE4SS_SHA256="476D6D38627B0905723288D95AB7ACB5FCD2834879455684B9DEF47A6007B8D5" `
+    PAL_UE4SS_FORCE_INSTALL="false" `
+    PAL_LOGS_DIR="C:\serverfiles\Logs" `
     PAL_USE_BACKUP_SAVE_DATA="true" `
     PAL_UPDATE_ON_START="true" `
     PAL_VALIDATE_ON_UPDATE="false" `
@@ -56,6 +62,7 @@ RUN & 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' `
     Remove-Item -Recurse -Force C:\build
 
 COPY scripts\Start.ps1 C:\Start.ps1
+COPY mods\PalBridge C:\PalBridgeMod
 
 EXPOSE 8211/udp
 EXPOSE 27015/udp

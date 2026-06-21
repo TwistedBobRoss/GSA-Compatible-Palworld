@@ -41,10 +41,16 @@
       "PAL_BRIDGE_LISTEN_ADDRESS": "0.0.0.0",
       "PAL_BRIDGE_PROXY_NATIVE": "true",
       "PAL_BRIDGE_AUTH_EMPTY_RESPONSE": "false",
+      "PAL_BRIDGE_QUEUE": "C:/serverfiles/PalBridge/queue",
+      "PAL_BRIDGE_DELIVERY_TIMEOUT": "10",
       "PAL_BRIDGE_LEDGER": "C:/serverfiles/PalBridge/ledger",
       "PAL_BRIDGE_LOG": "C:/serverfiles/Logs/PalBridge.log",
-      "PALDEFENDER_REST_URL": "http://127.0.0.1:17993",
-      "PALDEFENDER_TOKEN_FILE": "C:/serverfiles/Pal/Binaries/Win64/PalDefender/RESTAPI/Tokens/GSA.json",
+      "PAL_MOD_ENABLED": "true",
+      "PAL_UE4SS_RELEASE": "{config_parameter id=\"ue4ss_release\"}",
+      "PAL_UE4SS_URL": "{config_parameter id=\"ue4ss_url\"}",
+      "PAL_UE4SS_SHA256": "{config_parameter id=\"ue4ss_sha256\"}",
+      "PAL_UE4SS_FORCE_INSTALL": "false",
+      "PAL_LOGS_DIR": "C:/serverfiles/Logs",
       "PAL_USE_BACKUP_SAVE_DATA": "{config_parameter id=\"use_backup_save_data\"}",
       "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
       "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
@@ -145,6 +151,24 @@
           "info": "Adds SteamCMD validate. Useful for repair, but substantially increases startup time.",
           "type": "boolean",
           "content": "0"
+        },
+        "ue4ss_release": {
+          "name": "UE4SS Release",
+          "info": "Official UE4SS GitHub release tag used for the packaged PalBridge mod loader.",
+          "type": "text",
+          "content": "experimental-latest"
+        },
+        "ue4ss_url": {
+          "name": "UE4SS Download URL Override",
+          "info": "Pinned official UE4SS zip URL tested by this blueprint. Clear it only if you intend to resolve a different release through GitHub.",
+          "type": "text",
+          "content": "https://github.com/UE4SS-RE/RE-UE4SS/releases/download/experimental-latest/UE4SS_v3.0.1-971-g9ec5ece7.zip"
+        },
+        "ue4ss_sha256": {
+          "name": "UE4SS SHA-256",
+          "info": "Checksum for the pinned UE4SS zip. Update this together with the URL.",
+          "type": "text",
+          "content": "476D6D38627B0905723288D95AB7ACB5FCD2834879455684B9DEF47A6007B8D5"
         },
         "extra_args": {
           "name": "Extra Launch Arguments",

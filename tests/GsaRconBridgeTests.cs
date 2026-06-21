@@ -26,8 +26,6 @@ internal static class GsaRconBridgeTests
         private volatile bool _stopping;
 
         public int Port { get; private set; }
-        public int GiveCount;
-        public string LastGiveBody;
         public string LastAnnounceBody;
 
         public FakeHttpServer()
@@ -80,11 +78,9 @@ internal static class GsaRconBridgeTests
                 var bodyBytes = ReadExact(stream, contentLength);
                 var body = Encoding.UTF8.GetString(bodyBytes);
                 string response;
-                if (path == "/v1/pdapi/give")
+                if (path == "/v1/api/players")
                 {
-                    Interlocked.Increment(ref GiveCount);
-                    LastGiveBody = body;
-                    response = "{\"Errors\":0,\"Error\":{}}";
+                    response = "{\"players\":[{\"name\":\"Test Pal\",\"accountName\":\"tester\",\"playerId\":\"AFAFD830000000000000000000000000\",\"userId\":\"steam_123\"}]}";
                 }
                 else if (path == "/v1/api/announce")
                 {
@@ -123,7 +119,11 @@ internal static class GsaRconBridgeTests
                 }
                 bytes.Add((byte)value);
                 var count = bytes.Count;
-                if (count >= 4 && bytes[count - 4] == 13 && bytes[count - 3] == 10 && bytes[count - 2] == 13 && bytes[count - 1] == 10)
+                if (count >= 4 &&
+                    bytes[count - 4] == 13 &&
+                    bytes[count - 3] == 10 &&
+                    bytes[count - 2] == 13 &&
+                    bytes[count - 1] == 10)
                 {
                     return Encoding.ASCII.GetString(bytes.ToArray());
                 }
@@ -151,6 +151,89 @@ internal static class GsaRconBridgeTests
         {
             _stopping = true;
             _listener.Stop();
+            _thread.Join(2000);
+        }
+    }
+
+    private sealed class FakeQueueWorker : IDisposable
+    {
+        private readonly string _queueRoot;
+        private readonly Thread _thread;
+        private volatile bool _stopping;
+
+        public int GiveCount;
+        public string LastRequest;
+
+        public FakeQueueWorker(string queueRoot)
+        {
+            _queueRoot = queueRoot;
+            Directory.CreateDirectory(Path.Combine(_queueRoot, "in"));
+            Directory.CreateDirectory(Path.Combine(_queueRoot, "work"));
+            Directory.CreateDirectory(Path.Combine(_queueRoot, "out"));
+            _thread = new Thread(Run);
+            _thread.IsBackground = true;
+            _thread.Start();
+        }
+
+        private void Run()
+        {
+            while (!_stopping)
+            {
+                foreach (var requestPath in Directory.GetFiles(Path.Combine(_queueRoot, "in"), "*.request"))
+                {
+                    var name = Path.GetFileName(requestPath);
+                    var workPath = Path.Combine(_queueRoot, "work", name);
+                    try
+                    {
+                        File.Move(requestPath, workPath);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    var request = Parse(File.ReadAllLines(workPath, Encoding.UTF8));
+                    LastRequest = File.ReadAllText(workPath, Encoding.UTF8);
+                    Interlocked.Increment(ref GiveCount);
+                    var responsePath = Path.Combine(
+                        _queueRoot,
+                        "out",
+                        Path.GetFileNameWithoutExtension(name) + ".response");
+                    var response =
+                        "version=1\r\n" +
+                        "delivery=" + request["delivery"] + "\r\n" +
+                        "character=" + request["character"] + "\r\n" +
+                        "player=" + request["player"] + "\r\n" +
+                        "item=" + request["item"] + "\r\n" +
+                        "count=" + request["count"] + "\r\n" +
+                        "status=delivered\r\n" +
+                        "code=success\r\n" +
+                        "message=Test worker delivered item\r\n";
+                    File.WriteAllText(responsePath + ".tmp", response, new UTF8Encoding(false));
+                    File.Move(responsePath + ".tmp", responsePath);
+                    File.Delete(workPath);
+                }
+                Thread.Sleep(25);
+            }
+        }
+
+        private static Dictionary<string, string> Parse(string[] lines)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var line in lines)
+            {
+                var split = line.IndexOf('=');
+                if (split > 0)
+                {
+                    result[line.Substring(0, split)] = line.Substring(split + 1);
+                }
+            }
+            return result;
+        }
+
+        public void Dispose()
+        {
+            _stopping = true;
             _thread.Join(2000);
         }
     }
@@ -249,50 +332,60 @@ internal static class GsaRconBridgeTests
         try
         {
             using (var fake = new FakeHttpServer())
+            using (var queue = new FakeQueueWorker(Path.Combine(root, "queue")))
             {
                 var port = GetFreePort();
-                var tokenFile = Path.Combine(root, "token.json");
-                File.WriteAllText(tokenFile, "{\"Token\":\"fake-token\"}", new UTF8Encoding(false));
 
-                bridge = StartBridge(args[0], root, port, fake.Port, tokenFile);
+                bridge = StartBridge(args[0], root, port, fake.Port);
                 WaitForPort(port);
+
                 TestWrongPassword(port);
 
                 using (var client = new RconClient(port, Password, true))
                 {
                     Assert(client.Execute("palbridge ping").Contains("OK status=ready"), "Ping failed.");
+
                     var combined = client.ExecuteCombined("palbridge ping", "palbridge version");
                     Assert(combined[0].Id == 61 && combined[0].Body.Contains("status=ready"), "Combined ping failed.");
-                    Assert(combined[1].Id == 62 && combined[1].Body.Contains("version=0.1.0"), "Combined version failed.");
+                    Assert(combined[1].Id == 62 && combined[1].Body.Contains("version=0.2.0"), "Combined version failed.");
 
-                    var give = "palbridge give --delivery \"delivery-1\" --player \"steam_123\" --item \"Wood\" --count 5";
+                    var give = "palbridge give --delivery \"delivery-1\" --character \"AFAFD830000000000000000000000000\" --player \"steam_123\" --item \"Wood\" --count 5";
                     Assert(client.Execute(give).Contains("status=delivered"), "Initial delivery failed.");
-                    Assert(fake.GiveCount == 1, "Initial delivery did not call the backend exactly once.");
-                    Assert(fake.LastGiveBody.Contains("\"UserID\":\"steam_123\""), "Player ID was not sent.");
-                    Assert(fake.LastGiveBody.Contains("\"ItemID\":\"Wood\""), "Item ID was not sent.");
+                    Assert(queue.GiveCount == 1, "Initial delivery did not call the mod queue exactly once.");
+                    Assert(queue.LastRequest.Contains("character=AFAFD830000000000000000000000000"), "Character ID was not queued.");
+                    Assert(queue.LastRequest.Contains("player=steam_123"), "Player ID was not queued.");
+                    Assert(queue.LastRequest.Contains("item=Wood"), "Item ID was not queued.");
+
                     Assert(client.Execute(give).Contains("status=already_delivered"), "Duplicate delivery was not recognized.");
-                    Assert(fake.GiveCount == 1, "Duplicate delivery called the backend.");
+                    Assert(queue.GiveCount == 1, "Duplicate delivery called the mod queue.");
+
+                    var mismatch = "palbridge give --delivery \"delivery-2\" --character \"AFAFD830000000000000000000000000\" --player \"steam_999\" --item \"Wood\" --count 1";
+                    Assert(client.Execute(mismatch).Contains("code=identity_mismatch"), "Character/platform mismatch was not rejected.");
+                    Assert(queue.GiveCount == 1, "Mismatched identity reached the mod queue.");
+
                     Assert(client.Execute("Broadcast Héllo 世界").Contains("OK status=accepted"), "Unicode broadcast failed.");
                     Assert(fake.LastAnnounceBody.Contains("Héllo 世界"), "Unicode body was corrupted.");
+
                     var longResponse = client.Execute("Info");
                     Assert(longResponse.Length > 9000, "Long response was not reassembled from multiple packets.");
                 }
 
                 TestParallelClients(port);
+
                 StopBridge(bridge);
-                bridge = StartBridge(args[0], root, port, fake.Port, tokenFile);
+                bridge = StartBridge(args[0], root, port, fake.Port);
                 WaitForPort(port);
                 using (var client = new RconClient(port, Password, false))
                 {
-                    var give = "palbridge give --delivery \"delivery-1\" --player \"steam_123\" --item \"Wood\" --count 5";
+                    var give = "palbridge give --delivery \"delivery-1\" --character \"AFAFD830000000000000000000000000\" --player \"steam_123\" --item \"Wood\" --count 5";
                     Assert(client.Execute(give).Contains("status=already_delivered"), "Ledger did not survive restart.");
-                    Assert(fake.GiveCount == 1, "Restart retry duplicated the backend delivery.");
+                    Assert(queue.GiveCount == 1, "Restart retry duplicated the mod delivery.");
                 }
             }
 
             Console.WriteLine("Authentication and fragmented reads: PASS");
             Console.WriteLine("Combined and persistent commands: PASS");
-            Console.WriteLine("Atomic backend delivery and duplicate protection: PASS");
+            Console.WriteLine("REST identity validation, mod queue delivery, and duplicate protection: PASS");
             Console.WriteLine("UTF-8 and multi-packet responses: PASS");
             Console.WriteLine("Parallel clients and restart retry: PASS");
             return 0;
@@ -305,11 +398,17 @@ internal static class GsaRconBridgeTests
         finally
         {
             StopBridge(bridge);
-            try { Directory.Delete(root, true); } catch { }
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+            }
         }
     }
 
-    private static Process StartBridge(string executable, string root, int port, int backendPort, string tokenFile)
+    private static Process StartBridge(string executable, string root, int port, int backendPort)
     {
         Environment.SetEnvironmentVariable("PAL_ADMIN_PASSWORD", Password);
         Environment.SetEnvironmentVariable("PAL_RCON_PORT", port.ToString(CultureInfo.InvariantCulture));
@@ -317,8 +416,8 @@ internal static class GsaRconBridgeTests
         Environment.SetEnvironmentVariable("PAL_BRIDGE_PROXY_NATIVE", "false");
         Environment.SetEnvironmentVariable("PAL_BRIDGE_AUTH_EMPTY_RESPONSE", "false");
         Environment.SetEnvironmentVariable("PAL_REST_URL", "http://127.0.0.1:" + backendPort);
-        Environment.SetEnvironmentVariable("PALDEFENDER_REST_URL", "http://127.0.0.1:" + backendPort);
-        Environment.SetEnvironmentVariable("PALDEFENDER_TOKEN_FILE", tokenFile);
+        Environment.SetEnvironmentVariable("PAL_BRIDGE_QUEUE", Path.Combine(root, "queue"));
+        Environment.SetEnvironmentVariable("PAL_BRIDGE_DELIVERY_TIMEOUT", "3");
         Environment.SetEnvironmentVariable("PAL_BRIDGE_LEDGER", Path.Combine(root, "ledger"));
         Environment.SetEnvironmentVariable("PAL_BRIDGE_LOG", Path.Combine(root, "bridge.log"));
 
@@ -335,7 +434,10 @@ internal static class GsaRconBridgeTests
 
     private static void StopBridge(Process process)
     {
-        if (process == null) return;
+        if (process == null)
+        {
+            return;
+        }
         try
         {
             if (!process.HasExited)
@@ -345,7 +447,9 @@ internal static class GsaRconBridgeTests
             }
             process.Dispose();
         }
-        catch { }
+        catch
+        {
+        }
     }
 
     private static void TestWrongPassword(int port)
@@ -380,13 +484,22 @@ internal static class GsaRconBridgeTests
                         Assert(client.Execute("palbridge ping").Contains("status=ready"), "Parallel ping failed.");
                     }
                 }
-                catch (Exception ex) { failure = ex; }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
             });
             threads.Add(thread);
             thread.Start();
         }
-        foreach (var thread in threads) thread.Join();
-        if (failure != null) throw failure;
+        foreach (var thread in threads)
+        {
+            thread.Join();
+        }
+        if (failure != null)
+        {
+            throw failure;
+        }
     }
 
     private static int GetFreePort()
@@ -410,7 +523,10 @@ internal static class GsaRconBridgeTests
                     return;
                 }
             }
-            catch { Thread.Sleep(50); }
+            catch
+            {
+                Thread.Sleep(50);
+            }
         }
         throw new TimeoutException("Bridge did not start listening.");
     }
@@ -447,7 +563,10 @@ internal static class GsaRconBridgeTests
         while (offset < count)
         {
             var read = stream.Read(bytes, offset, count - offset);
-            if (read == 0) throw new EndOfStreamException();
+            if (read == 0)
+            {
+                throw new EndOfStreamException();
+            }
             offset += read;
         }
         return bytes;
@@ -455,6 +574,9 @@ internal static class GsaRconBridgeTests
 
     private static void Assert(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        if (!condition)
+        {
+            throw new InvalidOperationException(message);
+        }
     }
 }

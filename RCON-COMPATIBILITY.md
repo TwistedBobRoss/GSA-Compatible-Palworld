@@ -39,10 +39,10 @@ GameServerApp publicly documents that its command/control system supports multip
 Shop packs will include GSA's documented delivery ID so retries are idempotent:
 
 ```text
-palbridge give --delivery "{delivery.id}" --player "{player.id}" --item "ITEM_ID" --count 1
+palbridge give --delivery "{delivery.id}" --character "{character.id}" --player "{player.id}" --item "ITEM_ID" --count 1
 ```
 
-The gateway must persist `{delivery.id}` before returning success. Replaying the same delivery ID must return the original result without granting the reward twice.
+The gateway must persist `{delivery.id}` before returning success. Replaying the same delivery ID must return the original result without granting the reward twice. Before queueing the grant, it must find `{character.id}` and `{player.id}` on the same online record returned by Palworld REST `/players`.
 
 Responses use a single-line machine-readable prefix:
 
@@ -66,15 +66,17 @@ A release is not GSA-compatible until all of these pass:
 8. Interoperability with at least two independent Source RCON clients.
 9. GSA command console test.
 10. GSA RCON monitoring test.
-11. GSA Shop Pack delivery test using `{player.id}` and `{delivery.id}`.
+11. GSA Shop Pack delivery test using `{character.id}`, `{player.id}`, and `{delivery.id}`.
 12. Container restart during a delivery followed by a safe retry.
+13. A valid character ID paired with a different platform ID is rejected.
+14. `!getconnectcode` chat is attributed to the same character ID used by Delivery Builder.
 
-The local automated harness passes tests 1-7 and the ledger/restart portion of test 12. Test 8 passes with two independent clients:
+The local automated harness passes tests 1-7, 13, and the ledger/restart portion of test 12. Test 8 passes with two independent clients:
 
 - `rcon 2.4.9`
 - `mctools 1.3.0`
 
-Tests 9-11 and the complete container interruption scenario require deployment on the target GSA machine.
+Tests 9-11, 14, and the complete container interruption scenario require deployment on the target GSA machine.
 
 ## Sources
 

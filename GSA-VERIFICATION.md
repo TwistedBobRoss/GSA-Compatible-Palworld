@@ -1,6 +1,6 @@
 # GSA Documentation Verification
 
-Verified against the public GameServerApp documentation on June 19, 2026.
+Verified against the public GameServerApp and Pocketpair documentation on June 20, 2026.
 
 | Implementation | Documentation result |
 | --- | --- |
@@ -13,6 +13,9 @@ Verified against the public GameServerApp documentation on June 19, 2026.
 | Use RCON for GSA command/control | Supported by GSA, but Pocketpair marks Palworld RCON as deprecated. |
 | Provide our own Source RCON gateway on GSA's allocated RCON port | Supported in principle: GSA accepts RCON command/control connections and offers multiple implementations. Local Source RCON protocol tests pass; the selected `rcon_1` implementation still requires a live GSA acceptance test. |
 | Poll Palworld REST on `127.0.0.1:8212` | Supported by Pocketpair. The port is intentionally not published because Pocketpair warns against direct Internet exposure. |
+| Emit both Palworld `userId` and `playerId` on joins | Supported by Pocketpair's current `/players` schema. GSA distinguishes connected player accounts from in-game characters. |
+| Use `{delivery.id}`, `{player.id}`, and `{character.id}` in Shop Pack commands | Supported documented Delivery Builder variables. |
+| Support `!getconnectcode` account linking | GSA documents the player workflow, including typing the command twice. Its Palworld parser and response-command details are not public, so this requires a live acceptance test. |
 | Custom `[GSA]` chat or player tags | Not documented. The wrapper therefore preserves Palworld's native `[CHAT]` and `[LOG]` forms instead of inventing a GSA-specific grammar. |
 
 ## What Still Requires a Live GSA Test
@@ -24,6 +27,9 @@ Public GSA documentation does not describe its internal Palworld chat/player par
 - [Create and manage blueprints](https://docs.gameserverapp.com/dashboard/blueprints/create_and_manage_blueprints/)
 - [Create Docker blueprint](https://docs.gameserverapp.com/dashboard/blueprints/how-to/create_custom_blueprint/)
 - [Blueprint variables](https://docs.gameserverapp.com/dashboard/blueprints/variables/)
+- [Community website account connection](https://docs.gameserverapp.com/dashboard/community/website/)
+- [Delivery Builder actions](https://docs.gameserverapp.com/dashboard/delivery_builder/actions/)
+- [Delivery Builder variables](https://docs.gameserverapp.com/dashboard/delivery_builder/variables/)
 - [Palworld configuration parameters](https://docs.palworldgame.com/settings-and-operation/configuration/)
-- [Palworld REST API](https://docs.palworldgame.com/api/rest-api/palwold-rest-api/)
+- [Palworld REST player list](https://docs.palworldgame.com/api/rest-api/players/)
 - [Palworld RCON](https://docs.palworldgame.com/api/rcon/)

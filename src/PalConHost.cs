@@ -33,19 +33,19 @@ internal static class PalConHost
     private static StreamWriter _chatWriter;
     private static StreamWriter _eventWriter;
     private static readonly object _playerLock = new object();
-    private static readonly Dictionary<string, string> _knownPlayers =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, PlayerSnapshot> _knownPlayers =
+        new Dictionary<string, PlayerSnapshot>(StringComparer.OrdinalIgnoreCase);
     private static readonly Regex _chatRegex = new Regex(
-        @"^(?:\[[\d-]+ [\d:]+\] \[CHAT\] )?<(?<name>.+?)>\s(?<message>.*)$",
+        @"^(?:\[[\d-]+ [\d:]+(?:Z)?\] \[CHAT\] )?<(?<name>.+?)>\s(?<message>.*)$",
         RegexOptions.Compiled);
     private static readonly Regex _joinRegex = new Regex(
-        @"^(?:\[[\d-]+ [\d:]+\] \[LOG\] )?(?<name>.+?) (?:(?<endpoint>.+?) )?(?:connected|joined) the server\. \(User id: (?<id>.+?)\)$",
+        @"^(?:\[[\d-]+ [\d:]+(?:Z)?\] \[LOG\] )?(?<name>.+?) (?:(?<endpoint>.+?) )?(?:connected|joined) the server\. \(User id: (?<id>[^,\)]+)(?:, Player id: (?<playerId>[^\)]+))?\)$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex _loginRegex = new Regex(
         @"'(?:\s*)?(?<name>.+?)' \(UserId=(?<id>.+?)(?:,\s*IP=(?<endpoint>.+?))?\) has logged in\.$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex _leaveRegex = new Regex(
-        @"^(?:\[[\d-]+ [\d:]+\] \[LOG\] )?(?<name>.+?) left the server\. \(User id: (?<id>.+?)\)$",
+        @"^(?:\[[\d-]+ [\d:]+(?:Z)?\] \[LOG\] )?(?<name>.+?) left the server\. \(User id: (?<id>.+?)\)$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex _logoutRegex = new Regex(
         @"'(?:\s*)?(?<name>.+?)' \(UserId=(?<id>.+?)(?:,\s*IP=(?<endpoint>.+?))?\) has logged out\.$",
@@ -185,6 +185,14 @@ internal static class PalConHost
         public int PollSeconds = 10;
         public string CaptureMode = "pipe";
         public List<string> ChildArguments = new List<string>();
+    }
+
+    private sealed class PlayerSnapshot
+    {
+        public string UserId;
+        public string PlayerId;
+        public string Name;
+        public string AccountName;
     }
 
     public static int Main(string[] args)
@@ -604,7 +612,12 @@ internal static class PalConHost
         }
         if (join.Success)
         {
-            RecordPlayerJoin(join.Groups["id"].Value, join.Groups["name"].Value, "console");
+            RecordPlayerJoin(
+                join.Groups["id"].Value,
+                join.Groups["playerId"].Value,
+                join.Groups["name"].Value,
+                "",
+                "console");
             return;
         }
 
@@ -631,7 +644,7 @@ internal static class PalConHost
                     var serializer = new JavaScriptSerializer();
                     var root = serializer.DeserializeObject(response) as Dictionary<string, object>;
                     object playerValue;
-                    var snapshot = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var snapshot = new Dictionary<string, PlayerSnapshot>(StringComparer.OrdinalIgnoreCase);
 
                     if (root != null && root.TryGetValue("players", out playerValue))
                     {
@@ -648,17 +661,27 @@ internal static class PalConHost
 
                                 object idValue;
                                 object nameValue;
+                                object playerIdValue;
+                                object accountNameValue;
                                 if (!player.TryGetValue("userId", out idValue))
                                 {
                                     continue;
                                 }
 
                                 player.TryGetValue("name", out nameValue);
+                                player.TryGetValue("playerId", out playerIdValue);
+                                player.TryGetValue("accountName", out accountNameValue);
                                 var id = Convert.ToString(idValue);
                                 var name = Convert.ToString(nameValue);
                                 if (!string.IsNullOrWhiteSpace(id))
                                 {
-                                    snapshot[id] = string.IsNullOrWhiteSpace(name) ? id : name;
+                                    snapshot[id] = new PlayerSnapshot
+                                    {
+                                        UserId = id,
+                                        PlayerId = Convert.ToString(playerIdValue),
+                                        Name = string.IsNullOrWhiteSpace(name) ? id : name,
+                                        AccountName = Convert.ToString(accountNameValue)
+                                    };
                                 }
                             }
                         }
@@ -668,13 +691,16 @@ internal static class PalConHost
                     {
                         foreach (var pair in snapshot)
                         {
-                            if (!_knownPlayers.ContainsKey(pair.Key))
+                            PlayerSnapshot known;
+                            if (!_knownPlayers.TryGetValue(pair.Key, out known) ||
+                                (!string.IsNullOrWhiteSpace(pair.Value.PlayerId) &&
+                                 !string.Equals(known.PlayerId, pair.Value.PlayerId, StringComparison.OrdinalIgnoreCase)))
                             {
-                                RecordPlayerJoinLocked(pair.Key, pair.Value, "rest");
+                                RecordPlayerJoinLocked(pair.Value, "rest");
                             }
                         }
 
-                        var departed = new List<KeyValuePair<string, string>>();
+                        var departed = new List<KeyValuePair<string, PlayerSnapshot>>();
                         foreach (var pair in _knownPlayers)
                         {
                             if (!snapshot.ContainsKey(pair.Key))
@@ -685,7 +711,7 @@ internal static class PalConHost
 
                         foreach (var pair in departed)
                         {
-                            RecordPlayerLeaveLocked(pair.Key, pair.Value, "rest");
+                            RecordPlayerLeaveLocked(pair.Key, pair.Value.Name, "rest");
                         }
                     }
                 }
@@ -732,23 +758,46 @@ internal static class PalConHost
         }
     }
 
-    private static void RecordPlayerJoin(string id, string name, string source)
+    private static void RecordPlayerJoin(
+        string id,
+        string playerId,
+        string name,
+        string accountName,
+        string source)
     {
         lock (_playerLock)
         {
-            RecordPlayerJoinLocked(id, name, source);
+            RecordPlayerJoinLocked(
+                new PlayerSnapshot
+                {
+                    UserId = id,
+                    PlayerId = playerId,
+                    Name = name,
+                    AccountName = accountName
+                },
+                source);
         }
     }
 
-    private static void RecordPlayerJoinLocked(string id, string name, string source)
+    private static void RecordPlayerJoinLocked(PlayerSnapshot player, string source)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (player == null || string.IsNullOrWhiteSpace(player.UserId))
         {
             return;
         }
 
-        _knownPlayers[id] = name;
-        var line = Timestamp() + " [LOG] " + name + " joined the server. (User id: " + id + ")";
+        if (string.IsNullOrWhiteSpace(player.Name))
+        {
+            player.Name = player.UserId;
+        }
+
+        _knownPlayers[player.UserId] = player;
+        var identity = "User id: " + player.UserId;
+        if (!string.IsNullOrWhiteSpace(player.PlayerId))
+        {
+            identity += ", Player id: " + player.PlayerId;
+        }
+        var line = Timestamp() + " [LOG] " + player.Name + " joined the server. (" + identity + ")";
         WriteToLog(_eventWriter, line);
         if (source == "rest")
         {
@@ -773,10 +822,10 @@ internal static class PalConHost
             return;
         }
 
-        string knownName;
-        if (_knownPlayers.TryGetValue(id, out knownName) && string.IsNullOrWhiteSpace(name))
+        PlayerSnapshot known;
+        if (_knownPlayers.TryGetValue(id, out known) && string.IsNullOrWhiteSpace(name))
         {
-            name = knownName;
+            name = known.Name;
         }
 
         _knownPlayers.Remove(id);

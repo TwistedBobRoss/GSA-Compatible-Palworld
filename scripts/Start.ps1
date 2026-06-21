@@ -28,7 +28,7 @@ function Get-BoolEnv {
 function Get-EnvOrDefault {
     param(
         [Parameter(Mandatory = $true)][string]$Name,
-        [Parameter(Mandatory = $true)][string]$Default
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Default
     )
 
     $value = [Environment]::GetEnvironmentVariable($Name)
@@ -97,6 +97,120 @@ function Invoke-SteamUpdate {
     }
 }
 
+function Install-UE4SS {
+    param(
+        [Parameter(Mandatory = $true)][string]$Win64Dir,
+        [Parameter(Mandatory = $true)][string]$Release,
+        [AllowEmptyString()][string]$DownloadUrl,
+        [AllowEmptyString()][string]$Sha256,
+        [bool]$Force
+    )
+
+    $proxyPath = Join-Path $Win64Dir "dwmapi.dll"
+    $legacyDll = Join-Path $Win64Dir "UE4SS.dll"
+    $newDll = Join-Path $Win64Dir "ue4ss\UE4SS.dll"
+    if (-not $Force -and (Test-Path -LiteralPath $proxyPath) -and
+        ((Test-Path -LiteralPath $legacyDll) -or (Test-Path -LiteralPath $newDll))) {
+        Write-Host "*** UE4SS is already installed"
+        return
+    }
+
+    if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
+        Write-Host "*** Resolving official UE4SS release $Release"
+        $releaseInfo = Invoke-RestMethod `
+            -UseBasicParsing `
+            -Headers @{ "User-Agent" = "GSA-Compatible-Palworld" } `
+            -Uri "https://api.github.com/repos/UE4SS-RE/RE-UE4SS/releases/tags/$Release"
+        $asset = $releaseInfo.assets |
+            Where-Object {
+                $_.name -like "*.zip" -and
+                $_.name -match "UE4SS" -and
+                $_.name -notmatch "(?i)dev"
+            } |
+            Select-Object -First 1
+        if ($null -eq $asset) {
+            throw "No non-development UE4SS zip asset was found for release $Release."
+        }
+        $DownloadUrl = $asset.browser_download_url
+    }
+
+    $archive = Join-Path $env:TEMP "ue4ss.zip"
+    Write-Host "*** Downloading UE4SS from its official GitHub release"
+    Invoke-WebRequest `
+        -UseBasicParsing `
+        -Headers @{ "User-Agent" = "GSA-Compatible-Palworld" } `
+        -Uri $DownloadUrl `
+        -OutFile $archive
+    if (-not [string]::IsNullOrWhiteSpace($Sha256)) {
+        $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+        if (-not $actualHash.Equals($Sha256, [StringComparison]::OrdinalIgnoreCase)) {
+            Remove-Item -LiteralPath $archive -Force
+            throw "UE4SS checksum mismatch. Expected $Sha256 but downloaded $actualHash."
+        }
+    }
+    Expand-Archive -LiteralPath $archive -DestinationPath $Win64Dir -Force
+    Remove-Item -LiteralPath $archive -Force
+
+    if (-not (Test-Path -LiteralPath $proxyPath)) {
+        throw "UE4SS extraction completed, but dwmapi.dll was not found in $Win64Dir."
+    }
+}
+
+function Enable-UE4SSMod {
+    param(
+        [Parameter(Mandatory = $true)][string]$ModsDir,
+        [Parameter(Mandatory = $true)][string]$SourceDir
+    )
+
+    New-Item -ItemType Directory -Force -Path $ModsDir | Out-Null
+    $destination = Join-Path $ModsDir "PalBridge"
+    New-Item -ItemType Directory -Force -Path $destination | Out-Null
+    Copy-Item -Path (Join-Path $SourceDir "*") -Destination $destination -Recurse -Force
+
+    $modsFile = Join-Path $ModsDir "mods.txt"
+    $lines = @()
+    if (Test-Path -LiteralPath $modsFile) {
+        $lines = @(Get-Content -LiteralPath $modsFile |
+            Where-Object { $_ -notmatch "^\s*PalBridge\s*:" })
+    }
+
+    $builtInMods = @(
+        "ActorDumperMod",
+        "BPML_GenericFunctions",
+        "BPModLoaderMod",
+        "CheatManagerEnablerMod",
+        "ConsoleCommandsMod",
+        "ConsoleEnablerMod",
+        "Keybinds",
+        "LineTraceMod",
+        "SplitScreenMod",
+        "jsbLuaProfilerMod"
+    )
+    foreach ($builtInMod in $builtInMods) {
+        $pattern = "^\s*" + [Regex]::Escape($builtInMod) + "\s*:.*$"
+        $lines = @($lines | ForEach-Object {
+            if ($_ -match $pattern) { "$builtInMod : 0" } else { $_ }
+        })
+    }
+    $lines += "PalBridge : 1"
+    [IO.File]::WriteAllLines($modsFile, $lines, [Text.UTF8Encoding]::new($false))
+}
+
+function Configure-UE4SS {
+    param([Parameter(Mandatory = $true)][string]$SettingsPath)
+
+    if (-not (Test-Path -LiteralPath $SettingsPath)) {
+        return
+    }
+
+    $settings = Get-Content -LiteralPath $SettingsPath -Raw
+    $settings = [Regex]::Replace($settings, "(?m)^\s*GuiConsoleEnabled\s*=.*$", "GuiConsoleEnabled = 0")
+    $settings = [Regex]::Replace($settings, "(?m)^\s*GuiConsoleVisible\s*=.*$", "GuiConsoleVisible = 0")
+    $settings = [Regex]::Replace($settings, "(?m)^\s*ConsoleEnabled\s*=.*$", "ConsoleEnabled = 1")
+    $settings = [Regex]::Replace($settings, "(?m)^\s*bUseUObjectArrayCache\s*=.*$", "bUseUObjectArrayCache = false")
+    [IO.File]::WriteAllText($SettingsPath, $settings, [Text.UTF8Encoding]::new($false))
+}
+
 $DataDir = Get-EnvOrDefault -Name "PAL_DATA_DIR" -Default "C:\serverfiles"
 $ServerDir = $DataDir
 $SteamDir = Join-Path $DataDir "_steamcmd"
@@ -110,6 +224,8 @@ $ConfigPath = Join-Path $ConfigDir "PalWorldSettings.ini"
 $ConsoleLog = Join-Path $LogsDir "PalServer-console.log"
 $ChatLog = Join-Path $LogsDir "PalServer-chat.log"
 $EventLog = Join-Path $LogsDir "PalServer-events.log"
+$Win64Dir = Split-Path -Parent $ServerExe
+$PalBridgeModSource = "C:\PalBridgeMod"
 
 $GamePort = Get-EnvOrDefault -Name "PAL_GAME_PORT" -Default "8211"
 $QueryPort = Get-EnvOrDefault -Name "PAL_QUERY_PORT" -Default "27015"
@@ -127,6 +243,11 @@ $ExtraArgs = Get-EnvOrDefault -Name "PAL_EXTRA_ARGS" -Default ""
 $LogFormat = Get-EnvOrDefault -Name "PAL_LOG_FORMAT" -Default "Text"
 $CaptureMode = Get-EnvOrDefault -Name "PAL_CAPTURE_MODE" -Default "pipe"
 $BridgeEnabled = Get-BoolEnv -Name "PAL_BRIDGE_ENABLED" -Default $true
+$ModEnabled = Get-BoolEnv -Name "PAL_MOD_ENABLED" -Default $true
+$UE4SSForceInstall = Get-BoolEnv -Name "PAL_UE4SS_FORCE_INSTALL" -Default $false
+$UE4SSRelease = Get-EnvOrDefault -Name "PAL_UE4SS_RELEASE" -Default "experimental-latest"
+$UE4SSUrl = Get-EnvOrDefault -Name "PAL_UE4SS_URL" -Default ""
+$UE4SSSha256 = Get-EnvOrDefault -Name "PAL_UE4SS_SHA256" -Default ""
 $UpdateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default $true
 $ValidateOnUpdate = Get-BoolEnv -Name "PAL_VALIDATE_ON_UPDATE" -Default $false
 $PublicLobby = Get-BoolEnv -Name "PAL_PUBLIC_LOBBY" -Default $true
@@ -150,6 +271,27 @@ if ($UpdateOnStart -or -not (Test-Path -LiteralPath $ServerExe)) {
 
 if (-not (Test-Path -LiteralPath $ServerExe)) {
     throw "Palworld command server executable was not found at $ServerExe."
+}
+
+if ($ModEnabled) {
+    if (-not (Test-Path -LiteralPath $PalBridgeModSource)) {
+        throw "The packaged PalBridge mod source was not found at $PalBridgeModSource."
+    }
+
+    Install-UE4SS `
+        -Win64Dir $Win64Dir `
+        -Release $UE4SSRelease `
+        -DownloadUrl $UE4SSUrl `
+        -Sha256 $UE4SSSha256 `
+        -Force $UE4SSForceInstall
+
+    # UE4SS 3.x uses Win64\Mods. New experimental builds use Win64\ue4ss\Mods.
+    # Installing our source in both locations keeps the image compatible with either layout.
+    Enable-UE4SSMod -ModsDir (Join-Path $Win64Dir "Mods") -SourceDir $PalBridgeModSource
+    Enable-UE4SSMod -ModsDir (Join-Path $Win64Dir "ue4ss\Mods") -SourceDir $PalBridgeModSource
+    Configure-UE4SS -SettingsPath (Join-Path $Win64Dir "UE4SS-settings.ini")
+    Configure-UE4SS -SettingsPath (Join-Path $Win64Dir "ue4ss\UE4SS-settings.ini")
+    Write-Host "*** PalBridge UE4SS mod installed and enabled"
 }
 
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
