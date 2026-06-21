@@ -71,6 +71,24 @@ No PalGuard or PalDefender installation is required. UE4SS's optional debugging 
 
 The exact GSA account-linking validation is in [`GSA-CONNECT-CODE.md`](GSA-CONNECT-CODE.md). GSA does not publish its Palworld parser expressions, so a live `!getconnectcode` test remains required before production cutover.
 
+## Beginner-Friendly GSA Configuration
+
+The included blueprint is populated with vanilla-style defaults and exposes normal server administration as individual GSA fields instead of requiring operators to edit Palworld's single-line `OptionSettings` tuple.
+
+The fields are grouped into:
+
+- **Server**: description, public listing, public IP, and save backups
+- **Access**: password, allowed platforms, modded clients, and chat rate limit
+- **Gameplay**: PvP, Hardcore, death penalty, raids, fast travel, and starting-location selection
+- **Rates**: experience, capture, spawns, drops, day/night speed, and egg incubation
+- **Combat**: player and Pal damage multipliers
+- **Survival**: hunger and stamina multipliers
+- **World Limits**: guild size, bases, workers, and structures
+- **Install**: SteamCMD update and validation behavior
+- **Advanced**: pinned UE4SS package information and extra launch arguments
+
+The GSA game-server name and slot limit remain the source of truth for `ServerName` and `ServerPlayerMaxNum`. The generated `PalWorldSettings.ini` is read-only in the Config Template because the container rebuilds its managed values from these fields whenever it starts.
+
 ## Capture Modes
 
 The default is:

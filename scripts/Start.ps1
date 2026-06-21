@@ -49,6 +49,15 @@ function Escape-PalString {
     return $Value.Replace("\", "\\").Replace('"', '\"').Replace("`r", "").Replace("`n", "\n")
 }
 
+function ConvertTo-PalBoolean {
+    param([bool]$Value)
+
+    if ($Value) {
+        return "True"
+    }
+    return "False"
+}
+
 function Set-PalSetting {
     param(
         [Parameter(Mandatory = $true)][string]$Content,
@@ -57,7 +66,7 @@ function Set-PalSetting {
     )
 
     $escapedName = [Regex]::Escape($Name)
-    $pattern = "(?<=\(|,)$escapedName=(?:`"(?:\\.|[^`"])*`"|[^,\)]*)"
+    $pattern = "(?<=\(|,)$escapedName=(?:`"(?:\\.|[^`"])*`"|\((?:[^()]|\([^()]*\))*\)|[^,\)]*)"
     $replacement = "$Name=$Value"
 
     if ([Regex]::IsMatch($Content, $pattern)) {
@@ -252,6 +261,35 @@ $UpdateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default $true
 $ValidateOnUpdate = Get-BoolEnv -Name "PAL_VALIDATE_ON_UPDATE" -Default $false
 $PublicLobby = Get-BoolEnv -Name "PAL_PUBLIC_LOBBY" -Default $true
 $UseBackupSaveData = Get-BoolEnv -Name "PAL_USE_BACKUP_SAVE_DATA" -Default $true
+$AllowClientMod = Get-BoolEnv -Name "PAL_ALLOW_CLIENT_MOD" -Default $false
+$CrossplayPlatforms = Get-EnvOrDefault -Name "PAL_CROSSPLAY_PLATFORMS" -Default "(Steam,Xbox,PS5,Mac)"
+$ChatPostLimitPerMinute = Get-EnvOrDefault -Name "PAL_CHAT_POST_LIMIT" -Default "10"
+$PvpEnabled = Get-BoolEnv -Name "PAL_PVP_ENABLED" -Default $false
+$HardcoreEnabled = Get-BoolEnv -Name "PAL_HARDCORE_ENABLED" -Default $false
+$DeathPenalty = Get-EnvOrDefault -Name "PAL_DEATH_PENALTY" -Default "All"
+$InvaderEnabled = Get-BoolEnv -Name "PAL_INVADER_ENABLED" -Default $true
+$FastTravelEnabled = Get-BoolEnv -Name "PAL_FAST_TRAVEL_ENABLED" -Default $true
+$StartLocationSelect = Get-BoolEnv -Name "PAL_START_LOCATION_SELECT" -Default $true
+$ExpRate = Get-EnvOrDefault -Name "PAL_EXP_RATE" -Default "1.0"
+$CaptureRate = Get-EnvOrDefault -Name "PAL_CAPTURE_RATE" -Default "1.0"
+$SpawnRate = Get-EnvOrDefault -Name "PAL_SPAWN_RATE" -Default "1.0"
+$EnemyDropRate = Get-EnvOrDefault -Name "PAL_ENEMY_DROP_RATE" -Default "1.0"
+$CollectionDropRate = Get-EnvOrDefault -Name "PAL_COLLECTION_DROP_RATE" -Default "1.0"
+$DayTimeSpeedRate = Get-EnvOrDefault -Name "PAL_DAY_TIME_SPEED_RATE" -Default "1.0"
+$NightTimeSpeedRate = Get-EnvOrDefault -Name "PAL_NIGHT_TIME_SPEED_RATE" -Default "1.0"
+$EggHatchingTime = Get-EnvOrDefault -Name "PAL_EGG_HATCHING_TIME" -Default "72.0"
+$PlayerDamageAttack = Get-EnvOrDefault -Name "PAL_PLAYER_DAMAGE_ATTACK" -Default "1.0"
+$PlayerDamageDefense = Get-EnvOrDefault -Name "PAL_PLAYER_DAMAGE_DEFENSE" -Default "1.0"
+$PalDamageAttack = Get-EnvOrDefault -Name "PAL_PAL_DAMAGE_ATTACK" -Default "1.0"
+$PalDamageDefense = Get-EnvOrDefault -Name "PAL_PAL_DAMAGE_DEFENSE" -Default "1.0"
+$PlayerHungerRate = Get-EnvOrDefault -Name "PAL_PLAYER_HUNGER_RATE" -Default "1.0"
+$PlayerStaminaRate = Get-EnvOrDefault -Name "PAL_PLAYER_STAMINA_RATE" -Default "1.0"
+$PalHungerRate = Get-EnvOrDefault -Name "PAL_PAL_HUNGER_RATE" -Default "1.0"
+$PalStaminaRate = Get-EnvOrDefault -Name "PAL_PAL_STAMINA_RATE" -Default "1.0"
+$GuildPlayerMax = Get-EnvOrDefault -Name "PAL_GUILD_PLAYER_MAX" -Default "20"
+$BaseCampMaxInGuild = Get-EnvOrDefault -Name "PAL_BASE_CAMP_MAX_IN_GUILD" -Default "4"
+$BaseCampWorkerMax = Get-EnvOrDefault -Name "PAL_BASE_CAMP_WORKER_MAX" -Default "15"
+$MaxBuildingLimit = Get-EnvOrDefault -Name "PAL_MAX_BUILDING_LIMIT" -Default "0"
 
 foreach ($directory in @($DataDir, $ServerDir, $SteamDir, $LogsDir, $BackupsDir, $ConfigDir)) {
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
@@ -316,7 +354,38 @@ $config = Set-PalSetting -Content $config -Name "RESTAPIEnabled" -Value "True"
 $config = Set-PalSetting -Content $config -Name "RESTAPIPort" -Value $RestPort
 $config = Set-PalSetting -Content $config -Name "LogFormatType" -Value $LogFormat
 $config = Set-PalSetting -Content $config -Name "bIsShowJoinLeftMessage" -Value "True"
-$config = Set-PalSetting -Content $config -Name "bIsUseBackupSaveData" -Value $(if ($UseBackupSaveData) { "True" } else { "False" })
+$config = Set-PalSetting -Content $config -Name "bIsUseBackupSaveData" -Value (ConvertTo-PalBoolean $UseBackupSaveData)
+$config = Set-PalSetting -Content $config -Name "bAllowClientMod" -Value (ConvertTo-PalBoolean $AllowClientMod)
+$config = Set-PalSetting -Content $config -Name "CrossplayPlatforms" -Value $CrossplayPlatforms
+$config = Set-PalSetting -Content $config -Name "ChatPostLimitPerMinute" -Value $ChatPostLimitPerMinute
+$config = Set-PalSetting -Content $config -Name "bIsPvP" -Value (ConvertTo-PalBoolean $PvpEnabled)
+$config = Set-PalSetting -Content $config -Name "bEnablePlayerToPlayerDamage" -Value (ConvertTo-PalBoolean $PvpEnabled)
+$config = Set-PalSetting -Content $config -Name "bEnableDefenseOtherGuildPlayer" -Value (ConvertTo-PalBoolean $PvpEnabled)
+$config = Set-PalSetting -Content $config -Name "bHardcore" -Value (ConvertTo-PalBoolean $HardcoreEnabled)
+$config = Set-PalSetting -Content $config -Name "DeathPenalty" -Value $DeathPenalty
+$config = Set-PalSetting -Content $config -Name "bEnableInvaderEnemy" -Value (ConvertTo-PalBoolean $InvaderEnabled)
+$config = Set-PalSetting -Content $config -Name "bEnableFastTravel" -Value (ConvertTo-PalBoolean $FastTravelEnabled)
+$config = Set-PalSetting -Content $config -Name "bIsStartLocationSelectByMap" -Value (ConvertTo-PalBoolean $StartLocationSelect)
+$config = Set-PalSetting -Content $config -Name "ExpRate" -Value $ExpRate
+$config = Set-PalSetting -Content $config -Name "PalCaptureRate" -Value $CaptureRate
+$config = Set-PalSetting -Content $config -Name "PalSpawnNumRate" -Value $SpawnRate
+$config = Set-PalSetting -Content $config -Name "EnemyDropItemRate" -Value $EnemyDropRate
+$config = Set-PalSetting -Content $config -Name "CollectionDropRate" -Value $CollectionDropRate
+$config = Set-PalSetting -Content $config -Name "DayTimeSpeedRate" -Value $DayTimeSpeedRate
+$config = Set-PalSetting -Content $config -Name "NightTimeSpeedRate" -Value $NightTimeSpeedRate
+$config = Set-PalSetting -Content $config -Name "PalEggDefaultHatchingTime" -Value $EggHatchingTime
+$config = Set-PalSetting -Content $config -Name "PlayerDamageRateAttack" -Value $PlayerDamageAttack
+$config = Set-PalSetting -Content $config -Name "PlayerDamageRateDefense" -Value $PlayerDamageDefense
+$config = Set-PalSetting -Content $config -Name "PalDamageRateAttack" -Value $PalDamageAttack
+$config = Set-PalSetting -Content $config -Name "PalDamageRateDefense" -Value $PalDamageDefense
+$config = Set-PalSetting -Content $config -Name "PlayerStomachDecreaceRate" -Value $PlayerHungerRate
+$config = Set-PalSetting -Content $config -Name "PlayerStaminaDecreaceRate" -Value $PlayerStaminaRate
+$config = Set-PalSetting -Content $config -Name "PalStomachDecreaceRate" -Value $PalHungerRate
+$config = Set-PalSetting -Content $config -Name "PalStaminaDecreaceRate" -Value $PalStaminaRate
+$config = Set-PalSetting -Content $config -Name "GuildPlayerMaxNum" -Value $GuildPlayerMax
+$config = Set-PalSetting -Content $config -Name "BaseCampMaxNumInGuild" -Value $BaseCampMaxInGuild
+$config = Set-PalSetting -Content $config -Name "BaseCampWorkerMaxNum" -Value $BaseCampWorkerMax
+$config = Set-PalSetting -Content $config -Name "MaxBuildingLimitNum" -Value $MaxBuildingLimit
 [IO.File]::WriteAllText($ConfigPath, $config, [Text.UTF8Encoding]::new($false))
 
 $serverArguments = @(

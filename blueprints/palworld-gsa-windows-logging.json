@@ -20,6 +20,7 @@
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
       "tag": "ltsc2022"
     },
+    "automatic_ports": true,
     "envs": {
       "PAL_DATA_DIR": "C:/serverfiles",
       "PAL_GAME_PORT": "{gameserver.game_port}",
@@ -52,6 +53,35 @@
       "PAL_UE4SS_FORCE_INSTALL": "false",
       "PAL_LOGS_DIR": "C:/serverfiles/Logs",
       "PAL_USE_BACKUP_SAVE_DATA": "{config_parameter id=\"use_backup_save_data\"}",
+      "PAL_ALLOW_CLIENT_MOD": "{config_parameter id=\"allow_client_mod\"}",
+      "PAL_CROSSPLAY_PLATFORMS": "{config_parameter id=\"crossplay_platforms\"}",
+      "PAL_CHAT_POST_LIMIT": "{config_parameter id=\"chat_post_limit\"}",
+      "PAL_PVP_ENABLED": "{config_parameter id=\"pvp_enabled\"}",
+      "PAL_HARDCORE_ENABLED": "{config_parameter id=\"hardcore_enabled\"}",
+      "PAL_DEATH_PENALTY": "{config_parameter id=\"death_penalty\"}",
+      "PAL_INVADER_ENABLED": "{config_parameter id=\"invader_enabled\"}",
+      "PAL_FAST_TRAVEL_ENABLED": "{config_parameter id=\"fast_travel_enabled\"}",
+      "PAL_START_LOCATION_SELECT": "{config_parameter id=\"start_location_select\"}",
+      "PAL_EXP_RATE": "{config_parameter id=\"exp_rate\"}",
+      "PAL_CAPTURE_RATE": "{config_parameter id=\"capture_rate\"}",
+      "PAL_SPAWN_RATE": "{config_parameter id=\"spawn_rate\"}",
+      "PAL_ENEMY_DROP_RATE": "{config_parameter id=\"enemy_drop_rate\"}",
+      "PAL_COLLECTION_DROP_RATE": "{config_parameter id=\"collection_drop_rate\"}",
+      "PAL_DAY_TIME_SPEED_RATE": "{config_parameter id=\"day_time_speed_rate\"}",
+      "PAL_NIGHT_TIME_SPEED_RATE": "{config_parameter id=\"night_time_speed_rate\"}",
+      "PAL_EGG_HATCHING_TIME": "{config_parameter id=\"egg_hatching_time\"}",
+      "PAL_PLAYER_DAMAGE_ATTACK": "{config_parameter id=\"player_damage_attack\"}",
+      "PAL_PLAYER_DAMAGE_DEFENSE": "{config_parameter id=\"player_damage_defense\"}",
+      "PAL_PAL_DAMAGE_ATTACK": "{config_parameter id=\"pal_damage_attack\"}",
+      "PAL_PAL_DAMAGE_DEFENSE": "{config_parameter id=\"pal_damage_defense\"}",
+      "PAL_PLAYER_HUNGER_RATE": "{config_parameter id=\"player_hunger_rate\"}",
+      "PAL_PLAYER_STAMINA_RATE": "{config_parameter id=\"player_stamina_rate\"}",
+      "PAL_PAL_HUNGER_RATE": "{config_parameter id=\"pal_hunger_rate\"}",
+      "PAL_PAL_STAMINA_RATE": "{config_parameter id=\"pal_stamina_rate\"}",
+      "PAL_GUILD_PLAYER_MAX": "{config_parameter id=\"guild_player_max\"}",
+      "PAL_BASE_CAMP_MAX_IN_GUILD": "{config_parameter id=\"base_camp_max_in_guild\"}",
+      "PAL_BASE_CAMP_WORKER_MAX": "{config_parameter id=\"base_camp_worker_max\"}",
+      "PAL_MAX_BUILDING_LIMIT": "{config_parameter id=\"max_building_limit\"}",
       "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
       "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
       "PAL_EXTRA_ARGS": "{config_parameter id=\"extra_args\"}"
@@ -104,75 +134,289 @@
       "files": {
         "PalWorldSettings.ini": {
           "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
-          "info": "Palworld settings. The wrapper preserves this file and only updates identity, ports, passwords, logging, REST, RCON, and slot values from GSA.",
-          "disable_edit": "0",
-          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},RCONEnabled=True,RCONPort=25576,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bIsShowJoinLeftMessage=True,bIsUseBackupSaveData={config_parameter id=\"use_backup_save_data\"})"
+          "info": "Generated from the beginner-friendly parameter boxes below. The container updates this file at every start. Use Extra Launch Arguments only for settings that are not represented by a box.",
+          "disable_edit": "1",
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},RCONEnabled=True,RCONPort=25576,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bIsShowJoinLeftMessage=True,bIsUseBackupSaveData={config_parameter id=\"use_backup_save_data\"},bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},ChatPostLimitPerMinute={config_parameter id=\"chat_post_limit\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},bHardcore={config_parameter id=\"hardcore_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},bIsStartLocationSelectByMap={config_parameter id=\"start_location_select\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},EnemyDropItemRate={config_parameter id=\"enemy_drop_rate\"},CollectionDropRate={config_parameter id=\"collection_drop_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"},PlayerDamageRateAttack={config_parameter id=\"player_damage_attack\"},PlayerDamageRateDefense={config_parameter id=\"player_damage_defense\"},PalDamageRateAttack={config_parameter id=\"pal_damage_attack\"},PalDamageRateDefense={config_parameter id=\"pal_damage_defense\"},PlayerStomachDecreaceRate={config_parameter id=\"player_hunger_rate\"},PlayerStaminaDecreaceRate={config_parameter id=\"player_stamina_rate\"},PalStomachDecreaceRate={config_parameter id=\"pal_hunger_rate\"},PalStaminaDecreaceRate={config_parameter id=\"pal_stamina_rate\"},GuildPlayerMaxNum={config_parameter id=\"guild_player_max\"},BaseCampMaxNumInGuild={config_parameter id=\"base_camp_max_in_guild\"},BaseCampWorkerMaxNum={config_parameter id=\"base_camp_worker_max\"},MaxBuildingLimitNum={config_parameter id=\"max_building_limit\"})"
         }
       },
       "parameters": {
         "server_description": {
           "name": "Server Description",
           "info": "Description shown for the Palworld server.",
+          "section": "Server",
           "type": "text",
           "content": "Palworld server hosted with GameServerApp"
         },
         "server_password": {
           "name": "Server Password",
           "info": "Password required to join. Leave blank for public access.",
+          "section": "Access",
           "type": "text",
           "content": ""
         },
         "public_ip": {
           "name": "Public IP",
           "info": "Optional public IPv4 address. Leave blank to let Palworld detect it.",
+          "section": "Server",
           "type": "text",
           "content": ""
         },
         "public_lobby": {
           "name": "Community/Public Lobby",
           "info": "Adds -publiclobby so the server can appear in the community server list.",
+          "section": "Server",
           "type": "boolean",
           "content": "1"
         },
         "use_backup_save_data": {
           "name": "Palworld Save Backups",
           "info": "Enables Palworld's built-in rotating save backups. This increases disk activity.",
+          "section": "Server",
           "type": "boolean",
           "content": "1"
+        },
+        "crossplay_platforms": {
+          "name": "Allowed Platforms",
+          "info": "Controls which clients may join. All Platforms allows Steam, Xbox, PlayStation 5, and Mac. Steam Only is useful for initial troubleshooting.",
+          "section": "Access",
+          "type": "array",
+          "dropdown": "{\"All Platforms\":\"(Steam,Xbox,PS5,Mac)\",\"Steam Only\":\"(Steam)\",\"Steam + Xbox\":\"(Steam,Xbox)\",\"Steam + Xbox + PS5\":\"(Steam,Xbox,PS5)\"}"
+        },
+        "allow_client_mod": {
+          "name": "Allow Modded Clients",
+          "info": "On permits players running client-side mods to connect. Off is the safer vanilla default and does not disable this server's PalBridge integration.",
+          "section": "Access",
+          "type": "boolean",
+          "content": "0"
+        },
+        "chat_post_limit": {
+          "name": "Chat Messages Per Minute",
+          "info": "Maximum chat messages one player may send per minute. The default 10 helps limit spam while allowing normal chat and !getconnectcode.",
+          "section": "Access",
+          "type": "text",
+          "content": "10"
+        },
+        "pvp_enabled": {
+          "name": "Enable PvP",
+          "info": "On enables all three Pocketpair-required PvP flags together: PvP mode, player damage, and defense against other guild players. PvP remains an experimental Palworld feature.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "0"
+        },
+        "hardcore_enabled": {
+          "name": "Hardcore Mode",
+          "info": "On prevents normal respawning after death. Leave off for a standard community server.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "0"
+        },
+        "death_penalty": {
+          "name": "Death Penalty",
+          "info": "None drops nothing. Items drops carried items except equipment. Items + Equipment drops both. All also drops the active Pal team.",
+          "section": "Gameplay",
+          "type": "array",
+          "dropdown": "{\"All Items + Equipment + Team Pals\":\"All\",\"Items + Equipment\":\"ItemAndEquipment\",\"Items Only\":\"Item\",\"None\":\"None\"}"
+        },
+        "invader_enabled": {
+          "name": "Enable Base Raids",
+          "info": "On allows NPC invasion events against player bases. Off disables these raid events.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "fast_travel_enabled": {
+          "name": "Enable Fast Travel",
+          "info": "On allows normal fast travel. Off disables it globally.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "start_location_select": {
+          "name": "Choose Starting Location",
+          "info": "On lets new characters choose a starting location from the map. Off uses the game's automatic starting behavior.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "exp_rate": {
+          "name": "Experience Rate",
+          "info": "Multiplier for experience gained. 1.0 is vanilla, 2.0 doubles experience, and 0.5 halves it.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "capture_rate": {
+          "name": "Pal Capture Rate",
+          "info": "Multiplier for Pal capture chance. 1.0 is vanilla; larger values make captures easier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "spawn_rate": {
+          "name": "Pal Spawn Rate",
+          "info": "Multiplier for the number of wild Pals. Values above 1.0 increase server CPU and memory load.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "enemy_drop_rate": {
+          "name": "Enemy Drop Quantity",
+          "info": "Multiplier for items dropped by defeated enemies. 1.0 is vanilla.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "collection_drop_rate": {
+          "name": "Gathering Drop Quantity",
+          "info": "Multiplier for resources obtained from gatherable objects. 1.0 is vanilla.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "day_time_speed_rate": {
+          "name": "Daytime Speed",
+          "info": "How quickly daytime passes. 1.0 is vanilla; 0.5 makes daytime last roughly twice as long.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "night_time_speed_rate": {
+          "name": "Nighttime Speed",
+          "info": "How quickly nighttime passes. 1.0 is vanilla; 2.0 makes nights pass about twice as quickly.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "egg_hatching_time": {
+          "name": "Huge Egg Incubation Hours",
+          "info": "Base hours required to hatch a Huge Egg. Smaller eggs scale from this value. 72.0 is the traditional vanilla value; 0 makes incubation immediate.",
+          "section": "Rates",
+          "type": "text",
+          "content": "72.0"
+        },
+        "player_damage_attack": {
+          "name": "Player Damage Dealt",
+          "info": "Multiplier for damage dealt by players. 1.0 is vanilla.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_damage_defense": {
+          "name": "Player Damage Taken",
+          "info": "Multiplier for damage received by players. Values below 1.0 make players tougher.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_damage_attack": {
+          "name": "Pal Damage Dealt",
+          "info": "Multiplier for damage dealt by Pals. 1.0 is vanilla.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_damage_defense": {
+          "name": "Pal Damage Taken",
+          "info": "Multiplier for damage received by Pals. Values below 1.0 make Pals tougher.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_hunger_rate": {
+          "name": "Player Hunger Drain",
+          "info": "Multiplier for player hunger depletion. Values below 1.0 make hunger drain more slowly.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_stamina_rate": {
+          "name": "Player Stamina Drain",
+          "info": "Multiplier for player stamina consumption. Values below 1.0 make stamina last longer.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_hunger_rate": {
+          "name": "Pal Hunger Drain",
+          "info": "Multiplier for Pal hunger depletion. Values below 1.0 reduce food consumption.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_stamina_rate": {
+          "name": "Pal Stamina Drain",
+          "info": "Multiplier for Pal stamina consumption. Values below 1.0 make Pal stamina last longer.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "guild_player_max": {
+          "name": "Players Per Guild",
+          "info": "Maximum members in one guild. The populated default is 20.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "20"
+        },
+        "base_camp_max_in_guild": {
+          "name": "Bases Per Guild",
+          "info": "Maximum bases one guild may own. Pocketpair lists 4 as the default and 10 as the maximum. More bases increase server load.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "4"
+        },
+        "base_camp_worker_max": {
+          "name": "Pals Per Base",
+          "info": "Maximum working Pals at each base. The populated default is 15; Pocketpair allows up to 50, with increased processing load.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "15"
+        },
+        "max_building_limit": {
+          "name": "Buildings Per Player",
+          "info": "Per-player structure limit. 0 means unlimited. Set a limit on large public servers to control save size and processing load.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "0"
         },
         "update_on_start": {
           "name": "Update Server On Start",
           "info": "Runs SteamCMD app_update 2394010 before launching. Disable after testing if GSA handles updates separately.",
+          "section": "Install",
           "type": "boolean",
           "content": "1"
         },
         "validate_on_update": {
           "name": "Validate During Update",
           "info": "Adds SteamCMD validate. Useful for repair, but substantially increases startup time.",
+          "section": "Install",
           "type": "boolean",
           "content": "0"
         },
         "ue4ss_release": {
           "name": "UE4SS Release",
           "info": "Official UE4SS GitHub release tag used for the packaged PalBridge mod loader.",
+          "section": "Advanced",
           "type": "text",
           "content": "experimental-latest"
         },
         "ue4ss_url": {
           "name": "UE4SS Download URL Override",
           "info": "Pinned official UE4SS zip URL tested by this blueprint. Clear it only if you intend to resolve a different release through GitHub.",
+          "section": "Advanced",
           "type": "text",
           "content": "https://github.com/UE4SS-RE/RE-UE4SS/releases/download/experimental-latest/UE4SS_v3.0.1-971-g9ec5ece7.zip"
         },
         "ue4ss_sha256": {
           "name": "UE4SS SHA-256",
           "info": "Checksum for the pinned UE4SS zip. Update this together with the URL.",
+          "section": "Advanced",
           "type": "text",
           "content": "476D6D38627B0905723288D95AB7ACB5FCD2834879455684B9DEF47A6007B8D5"
         },
         "extra_args": {
           "name": "Extra Launch Arguments",
           "info": "Optional extra Palworld command-line arguments.",
+          "section": "Advanced",
           "type": "text",
           "content": ""
         }
