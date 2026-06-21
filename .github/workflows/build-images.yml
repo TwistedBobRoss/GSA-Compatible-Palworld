@@ -1,0 +1,100 @@
+name: Build Palworld Windows Images
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+    paths:
+      - Dockerfile
+      - scripts/**
+      - src/**
+      - mods/**
+      - blueprints/**
+      - .github/workflows/build-images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.windows_version }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2019
+            windows_version: ltsc2019
+          - runner: windows-2022
+            windows_version: ltsc2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Windows Docker daemon
+        shell: powershell
+        run: |
+          $service = Get-Service -Name docker -ErrorAction Stop
+          if ($service.Status -ne "Running") {
+            Start-Service -Name docker
+          }
+
+          $deadline = (Get-Date).AddMinutes(3)
+          do {
+            docker info *> $null
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Docker daemon is ready."
+              break
+            }
+            Start-Sleep -Seconds 5
+          } while ((Get-Date) -lt $deadline)
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Docker daemon did not become ready within three minutes."
+          }
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Windows image
+        shell: powershell
+        env:
+          WINDOWS_VERSION: ${{ matrix.windows_version }}
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}"
+          docker build `
+            --build-arg "WINDOWS_VERSION=$env:WINDOWS_VERSION" `
+            --tag "${image}:$env:WINDOWS_VERSION" `
+            --tag "${image}:$env:WINDOWS_VERSION-${{ github.sha }}" `
+            .
+
+      - name: Smoke test packaged files
+        shell: powershell
+        env:
+          WINDOWS_VERSION: ${{ matrix.windows_version }}
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION"
+          docker run --rm --entrypoint powershell.exe $image `
+            -NoLogo -NoProfile -Command `
+            '$required=@("C:\PalConHost.exe","C:\GsaRconBridge.exe","C:\Start.ps1","C:\PalBridgeMod\Scripts\main.lua"); foreach($path in $required){if(-not(Test-Path -LiteralPath $path)){throw "Missing packaged file: $path"}}'
+
+      - name: Push Windows image
+        shell: powershell
+        env:
+          WINDOWS_VERSION: ${{ matrix.windows_version }}
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}"
+          docker push "${image}:$env:WINDOWS_VERSION"
+          docker push "${image}:$env:WINDOWS_VERSION-${{ github.sha }}"
