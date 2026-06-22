@@ -85,6 +85,7 @@ function Invoke-SteamUpdate {
     param(
         [Parameter(Mandatory = $true)][string]$SteamCmd,
         [Parameter(Mandatory = $true)][string]$ServerDir,
+        [Parameter(Mandatory = $true)][string]$SteamDir,
         [bool]$Validate
     )
 
@@ -99,10 +100,38 @@ function Invoke-SteamUpdate {
     }
 
     $arguments += "+quit"
-    Write-Host "*** Updating Palworld Dedicated Server with SteamCMD"
-    & $SteamCmd @arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "SteamCMD failed with exit code $LASTEXITCODE."
+    
+    $maxRetries = 3
+    $retryCount = 0
+    $steamCmdSuccess = $false
+
+    while (-not $steamCmdSuccess -and $retryCount -lt $maxRetries) {
+        Write-Host "*** Updating Palworld Dedicated Server with SteamCMD (Attempt $($retryCount + 1) of $maxRetries)..."
+        
+        & $SteamCmd @arguments
+        $exitCode = $LASTEXITCODE
+
+        if ($exitCode -eq 0) {
+            $steamCmdSuccess = $true
+            Write-Host "*** SteamCMD update successful."
+        } elseif ($exitCode -eq 7) {
+            Write-Host "*** SteamCMD encountered a file lock or requested a restart (Exit Code 7)."
+            Write-Host "*** Cleaning corrupted package cache to heal..."
+            $packageDir = Join-Path $SteamDir "package"
+            if (Test-Path -LiteralPath $packageDir) {
+                Remove-Item -Recurse -Force (Join-Path $packageDir "*") -ErrorAction SilentlyContinue
+            }
+            $retryCount++
+            Start-Sleep -Seconds 3
+        } else {
+            Write-Host "*** SteamCMD failed with exit code $exitCode."
+            $retryCount++
+            Start-Sleep -Seconds 3
+        }
+    }
+
+    if (-not $steamCmdSuccess) {
+        throw "SteamCMD failed to update after $maxRetries attempts."
     }
 }
 
@@ -304,7 +333,7 @@ if (-not (Test-Path -LiteralPath $SteamCmd)) {
 }
 
 if ($UpdateOnStart -or -not (Test-Path -LiteralPath $ServerExe)) {
-    Invoke-SteamUpdate -SteamCmd $SteamCmd -ServerDir $ServerDir -Validate $ValidateOnUpdate
+    Invoke-SteamUpdate -SteamCmd $SteamCmd -ServerDir $ServerDir -SteamDir $SteamDir -Validate $ValidateOnUpdate
 }
 
 if (-not (Test-Path -LiteralPath $ServerExe)) {
