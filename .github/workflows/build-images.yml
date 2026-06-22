@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   build:
-    name: Build ltsc2022
+    name: Build ltsc2022-R8
     runs-on: windows-2022
     timeout-minutes: 45
     env:
