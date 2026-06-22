@@ -66,15 +66,15 @@ jobs:
           $image = "ghcr.io/${repository}"
           docker build `
             --build-arg "WINDOWS_VERSION=$env:WINDOWS_VERSION" `
-            --tag "${image}:$env:WINDOWS_VERSION" `
-            --tag "${image}:$env:WINDOWS_VERSION-${{ github.sha }}" `
+            --tag "${image}:$env:WINDOWS_VERSION-R8" `
+            --tag "${image}:$env:WINDOWS_VERSION-R8-${{ github.sha }}" `
             .
 
       - name: Smoke test packaged files
         shell: powershell
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
-          $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION"
+          $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION-R8"
           docker run --rm --entrypoint powershell.exe $image `
             -NoLogo -NoProfile -Command `
             "if (-not (Test-Path C:\PalConHost.exe)) { exit 11 }; if (-not (Test-Path C:\GsaRconBridge.exe)) { exit 12 }; if (-not (Test-Path C:\Start.ps1)) { exit 13 }; if (-not (Test-Path C:\PalBridgeMod\Scripts\main.lua)) { exit 14 }"
@@ -87,5 +87,5 @@ jobs:
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
           $image = "ghcr.io/${repository}"
-          docker push "${image}:$env:WINDOWS_VERSION"
-          docker push "${image}:$env:WINDOWS_VERSION-${{ github.sha }}"
+          docker push "${image}:$env:WINDOWS_VERSION-R8"
+          docker push "${image}:$env:WINDOWS_VERSION-R8-${{ github.sha }}"
