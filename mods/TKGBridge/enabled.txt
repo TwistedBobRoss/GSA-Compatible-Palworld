@@ -1,0 +1,1 @@
+This folder marks TKGBridge as a built-in first-party mod package.
