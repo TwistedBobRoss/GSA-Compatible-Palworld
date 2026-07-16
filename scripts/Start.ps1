@@ -126,8 +126,18 @@ function Invoke-PalworldInstall {
 
     Write-Host "*** Installing or updating Palworld Dedicated Server"
     & $SteamCmdPath @arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "SteamCMD failed with exit code $LASTEXITCODE."
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        $expectedExe = Join-Path $ServerRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"
+        $expectedConfig = Join-Path $ServerRoot "DefaultPalWorldSettings.ini"
+        $installLooksUsable = (Test-Path -LiteralPath $expectedExe) -and (Test-Path -LiteralPath $expectedConfig)
+
+        if ($exitCode -eq 7 -and $installLooksUsable) {
+            Write-Warning "SteamCMD returned exit code 7 after a usable Palworld install/update. Continuing."
+            return
+        }
+
+        throw "SteamCMD failed with exit code $exitCode."
     }
 }
 
