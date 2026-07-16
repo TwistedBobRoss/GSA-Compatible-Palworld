@@ -105,10 +105,115 @@ function Install-SteamCmd {
     Remove-Item -LiteralPath $archive -Force
 }
 
+function Resolve-PalworldLayout {
+    param(
+        [Parameter(Mandatory = $true)][string]$PreferredRoot,
+        [Parameter(Mandatory = $true)][string]$SearchRoot
+    )
+
+    $steamCmdRoot = Join-Path $SearchRoot "_steamcmd"
+    $candidateRoots = @(
+        $PreferredRoot,
+        $SearchRoot,
+        $steamCmdRoot
+    ) | Select-Object -Unique
+
+    $candidateExePaths = @(
+        (Join-Path $PreferredRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
+        (Join-Path $PreferredRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
+        (Join-Path $SearchRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
+        (Join-Path $SearchRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
+        (Join-Path $steamCmdRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe")
+    ) | Select-Object -Unique
+
+    $serverExe = $null
+    foreach ($candidate in $candidateExePaths) {
+        if (Test-Path -LiteralPath $candidate) {
+            $serverExe = $candidate
+            break
+        }
+    }
+
+    if ($null -eq $serverExe) {
+        foreach ($root in $candidateRoots) {
+            if (-not (Test-Path -LiteralPath $root)) {
+                continue
+            }
+
+            $match = Get-ChildItem `
+                -LiteralPath $root `
+                -Filter "PalServer-Win64-Shipping-Cmd.exe" `
+                -File `
+                -Recurse `
+                -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+
+            if ($null -ne $match) {
+                $serverExe = $match.FullName
+                break
+            }
+        }
+    }
+
+    if ($null -eq $serverExe) {
+        return $null
+    }
+
+    $win64Dir = Split-Path -Parent $serverExe
+    $binariesDir = Split-Path -Parent $win64Dir
+    $palRoot = Split-Path -Parent $binariesDir
+    $installRoot = Split-Path -Parent $palRoot
+
+    $defaultConfigCandidates = @(
+        (Join-Path $installRoot "DefaultPalWorldSettings.ini"),
+        (Join-Path $palRoot "DefaultPalWorldSettings.ini")
+    ) | Select-Object -Unique
+
+    $defaultConfigPath = $defaultConfigCandidates[0]
+    foreach ($candidate in $defaultConfigCandidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $defaultConfigPath = $candidate
+            break
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $defaultConfigPath)) {
+        foreach ($root in @($installRoot, $palRoot) | Select-Object -Unique) {
+            if (-not (Test-Path -LiteralPath $root)) {
+                continue
+            }
+
+            $match = Get-ChildItem `
+                -LiteralPath $root `
+                -Filter "DefaultPalWorldSettings.ini" `
+                -File `
+                -Recurse `
+                -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+
+            if ($null -ne $match) {
+                $defaultConfigPath = $match.FullName
+                break
+            }
+        }
+    }
+
+    return [PSCustomObject]@{
+        InstallRoot = $installRoot
+        PalRoot = $palRoot
+        Win64Dir = $win64Dir
+        ServerExe = $serverExe
+        DefaultConfigPath = $defaultConfigPath
+        ConfigPath = Join-Path $palRoot "Saved\Config\WindowsServer\PalWorldSettings.ini"
+        NativeLogsDir = Join-Path $palRoot "Saved\Logs"
+    }
+}
+
 function Invoke-PalworldInstall {
     param(
         [Parameter(Mandatory = $true)][string]$SteamCmdPath,
         [Parameter(Mandatory = $true)][string]$ServerRoot,
+        [Parameter(Mandatory = $true)][string]$SearchRoot,
         [bool]$Validate
     )
 
@@ -128,9 +233,10 @@ function Invoke-PalworldInstall {
     & $SteamCmdPath @arguments
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
-        $expectedExe = Join-Path $ServerRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"
-        $expectedConfig = Join-Path $ServerRoot "DefaultPalWorldSettings.ini"
-        $installLooksUsable = (Test-Path -LiteralPath $expectedExe) -and (Test-Path -LiteralPath $expectedConfig)
+        $resolvedLayout = Resolve-PalworldLayout -PreferredRoot $ServerRoot -SearchRoot $SearchRoot
+        $installLooksUsable = ($null -ne $resolvedLayout) -and
+            (Test-Path -LiteralPath $resolvedLayout.ServerExe) -and
+            (Test-Path -LiteralPath $resolvedLayout.DefaultConfigPath)
 
         if ($exitCode -eq 7 -and $installLooksUsable) {
             Write-Warning "SteamCMD returned exit code 7 after a usable Palworld install/update. Continuing."
@@ -265,7 +371,7 @@ $steamCmdRoot = Get-EnvOrDefault -Name "PAL_STEAMCMD_DIR" -Default (Join-Path $d
 $logsDir = Get-EnvOrDefault -Name "PAL_LOG_DIR" -Default (Join-Path $dataDir "Logs")
 $modsSourceRoot = Get-EnvOrDefault -Name "PAL_MODS_DIR" -Default "C:\image-mods"
 $bridgeDir = Get-EnvOrDefault -Name "PAL_BRIDGE_DIR" -Default (Join-Path $dataDir "TKGBridge")
-$serverRoot = Get-EnvOrDefault -Name "PAL_SERVER_ROOT" -Default $dataDir
+$serverRoot = Get-EnvOrDefault -Name "PAL_SERVER_ROOT" -Default (Join-Path $dataDir "PalServer")
 $serverName = Get-EnvOrDefault -Name "PAL_SERVER_NAME" -Default "Palworld Server"
 $serverDescription = Get-EnvOrDefault -Name "PAL_SERVER_DESCRIPTION" -Default "Palworld server hosted with GameServerApp"
 $serverPassword = Get-EnvOrDefault -Name "PAL_SERVER_PASSWORD" -Default ""
@@ -320,10 +426,11 @@ $ue4ssUrl = Get-EnvOrDefault -Name "PAL_UE4SS_URL" -Default ""
 $ue4ssSha256 = Get-EnvOrDefault -Name "PAL_UE4SS_SHA256" -Default ""
 
 $steamCmdPath = Join-Path $steamCmdRoot "steamcmd.exe"
-$serverExe = Join-Path $serverRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"
-$defaultConfigPath = Join-Path $serverRoot "DefaultPalWorldSettings.ini"
-$configPath = Join-Path $serverRoot "Pal\Saved\Config\WindowsServer\PalWorldSettings.ini"
-$win64Dir = Split-Path -Parent $serverExe
+$serverLayout = $null
+$serverExe = $null
+$defaultConfigPath = $null
+$configPath = $null
+$win64Dir = $null
 
 Ensure-Directory -Path $dataDir
 Ensure-Directory -Path $logsDir
@@ -332,13 +439,21 @@ Ensure-Directory -Path $serverRoot
 
 Install-SteamCmd -SteamCmdPath $steamCmdPath -InstallRoot $steamCmdRoot
 
-if ($updateOnStart -or -not (Test-Path -LiteralPath $serverExe)) {
-    Invoke-PalworldInstall -SteamCmdPath $steamCmdPath -ServerRoot $serverRoot -Validate $validateOnUpdate
+$serverLayout = Resolve-PalworldLayout -PreferredRoot $serverRoot -SearchRoot $dataDir
+
+if ($updateOnStart -or $null -eq $serverLayout) {
+    Invoke-PalworldInstall -SteamCmdPath $steamCmdPath -ServerRoot $serverRoot -SearchRoot $dataDir -Validate $validateOnUpdate
+    $serverLayout = Resolve-PalworldLayout -PreferredRoot $serverRoot -SearchRoot $dataDir
 }
 
-if (-not (Test-Path -LiteralPath $serverExe)) {
-    throw "Palworld command server executable was not found at $serverExe."
+if ($null -eq $serverLayout) {
+    throw "Palworld command server executable was not found under $serverRoot or $dataDir after SteamCMD completed."
 }
+
+$serverExe = $serverLayout.ServerExe
+$defaultConfigPath = $serverLayout.DefaultConfigPath
+$configPath = $serverLayout.ConfigPath
+$win64Dir = $serverLayout.Win64Dir
 
 $settings = @{
     "ServerName" = '"' + (Escape-PalString $serverName) + '"'
@@ -416,6 +531,7 @@ if (-not [string]::IsNullOrWhiteSpace($extraArgs)) {
 }
 
 Write-Host "*** GSA-Compatible Palworld bootstrap"
+Write-Host ("*** Install root: " + $serverLayout.InstallRoot)
 Write-Host ("*** Executable: " + $serverExe)
 Write-Host ("*** Config: " + $configPath)
 Write-Host ("*** Logs directory: " + $logsDir)
