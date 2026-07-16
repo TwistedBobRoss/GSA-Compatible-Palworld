@@ -214,25 +214,30 @@ function Invoke-PalworldInstall {
         [Parameter(Mandatory = $true)][string]$SteamCmdPath,
         [Parameter(Mandatory = $true)][string]$ServerRoot,
         [Parameter(Mandatory = $true)][string]$SearchRoot,
-        [bool]$Validate
+        [bool]$Validate,
+        [int]$MaxAttempts = 3
     )
 
-    $arguments = @(
-        "+force_install_dir", $ServerRoot,
-        "+login", "anonymous",
-        "+app_update", "2394010"
-    )
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        $arguments = @(
+            "+force_install_dir", $ServerRoot,
+            "+login", "anonymous",
+            "+app_update", "2394010"
+        )
 
-    if ($Validate) {
-        $arguments += "validate"
-    }
+        if ($Validate) {
+            $arguments += "validate"
+        }
 
-    $arguments += "+quit"
+        $arguments += "+quit"
 
-    Write-Host "*** Installing or updating Palworld Dedicated Server"
-    & $SteamCmdPath @arguments
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
+        Write-Host ("*** Installing or updating Palworld Dedicated Server (attempt {0}/{1})" -f $attempt, $MaxAttempts)
+        & $SteamCmdPath @arguments
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -eq 0) {
+            return
+        }
+
         $resolvedLayout = Resolve-PalworldLayout -PreferredRoot $ServerRoot -SearchRoot $SearchRoot
         $installLooksUsable = ($null -ne $resolvedLayout) -and
             (Test-Path -LiteralPath $resolvedLayout.ServerExe)
@@ -243,6 +248,12 @@ function Invoke-PalworldInstall {
                 Write-Warning "DefaultPalWorldSettings.ini was not discovered; the launcher will bootstrap PalWorldSettings.ini directly."
             }
             return
+        }
+
+        if ($attempt -lt $MaxAttempts) {
+            Write-Warning ("SteamCMD attempt {0} failed with exit code {1}. Retrying after a short delay." -f $attempt, $exitCode)
+            Start-Sleep -Seconds 5
+            continue
         }
 
         throw "SteamCMD failed with exit code $exitCode."
