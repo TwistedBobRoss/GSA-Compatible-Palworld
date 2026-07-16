@@ -67,7 +67,7 @@ function Set-PalSetting {
     )
 
     $escapedName = [Regex]::Escape($Name)
-    $pattern = "(?<=\(|,)$escapedName=(?:`\"(?:\\.|[^`\"])*`\"|\((?:[^()]|\([^()]*\))*\)|[^,\)]*)"
+    $pattern = '(?<=\(|,)' + $escapedName + '=(?:"(?:\\.|[^"])*"|\((?:[^()]|\([^()]*\))*\)|[^,\)]*)'
     $replacement = "$Name=$Value"
 
     if ([Regex]::IsMatch($Content, $pattern)) {
