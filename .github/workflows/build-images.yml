@@ -1,0 +1,93 @@
+name: Build clean-room Palworld Windows image
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+    paths:
+      - "docker/**"
+      - "scripts/**"
+      - "mods/**"
+      - "blueprints/**"
+      - "docs/**"
+      - "README.md"
+      - ".github/workflows/build-images.yml"
+      - ".github/workflows/validate-artifacts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      WINDOWS_VERSION: ltsc2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Windows Docker daemon
+        shell: powershell
+        run: |
+          $service = Get-Service -Name docker -ErrorAction Stop
+          if ($service.Status -ne "Running") {
+            Start-Service -Name docker
+          }
+
+          $deadline = (Get-Date).AddMinutes(3)
+          do {
+            docker info *> $null
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Docker daemon is ready."
+              break
+            }
+            Start-Sleep -Seconds 5
+          } while ((Get-Date) -lt $deadline)
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Docker daemon did not become ready within three minutes."
+          }
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Windows image
+        shell: powershell
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}"
+          docker build `
+            --build-arg "WINDOWS_VERSION=$env:WINDOWS_VERSION" `
+            --file "docker/windows/ltsc2022/Dockerfile" `
+            --tag "${image}:$env:WINDOWS_VERSION-cleanroom" `
+            --tag "${image}:$env:WINDOWS_VERSION-cleanroom-${{ github.sha }}" `
+            .
+
+      - name: Smoke test packaged files
+        shell: powershell
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION-cleanroom"
+          docker run --rm --entrypoint powershell.exe $image `
+            -NoLogo -NoProfile -Command `
+            "if (-not (Test-Path C:\Start.ps1)) { exit 11 }; if (-not (Test-Path C:\image-mods\TKGBridge\Scripts\main.lua)) { exit 12 }; if (-not (Test-Path C:\image-mods\TKGBridge\enabled.txt)) { exit 13 }"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Packaged-file smoke test failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Push Windows image
+        shell: powershell
+        run: |
+          $repository = "${{ github.repository }}".ToLowerInvariant()
+          $image = "ghcr.io/${repository}"
+          docker push "${image}:$env:WINDOWS_VERSION-cleanroom"
+          docker push "${image}:$env:WINDOWS_VERSION-cleanroom-${{ github.sha }}"
