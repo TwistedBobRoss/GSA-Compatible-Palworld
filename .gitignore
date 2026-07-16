@@ -1,0 +1,4 @@
+serverfiles/
+*.log
+*.zip
+*.tmp
