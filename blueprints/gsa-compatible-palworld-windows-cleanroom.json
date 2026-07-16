@@ -1,0 +1,440 @@
+{
+  "_version": 3,
+  "type": "custom",
+  "docker": {
+    "ports": {
+      "game": {
+        "port": "8211",
+        "multiplier": "1"
+      },
+      "query": {
+        "port": "27015",
+        "multiplier": "1"
+      }
+    },
+    "image": {
+      "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
+      "tag": "ltsc2022-cleanroom"
+    },
+    "automatic_ports": true,
+    "envs": {
+      "PAL_DATA_DIR": "C:/serverfiles",
+      "PAL_STEAMCMD_DIR": "C:/serverfiles/_steamcmd",
+      "PAL_SERVER_ROOT": "C:/serverfiles",
+      "PAL_LOG_DIR": "C:/serverfiles/Logs",
+      "PAL_BRIDGE_DIR": "C:/serverfiles/TKGBridge",
+      "PAL_BRIDGE_TRACE": "{config_parameter id=\"bridge_trace\"}",
+      "PAL_MODS_DIR": "C:/image-mods",
+      "PAL_SERVER_NAME": "{gameserver.list_name}",
+      "PAL_SERVER_DESCRIPTION": "{config_parameter id=\"server_description\"}",
+      "PAL_SERVER_PASSWORD": "{config_parameter id=\"server_password\"}",
+      "PAL_ADMIN_PASSWORD": "{config_parameter id=\"admin_password\"}",
+      "PAL_GAME_PORT": "{gameserver.game_port}",
+      "PAL_QUERY_PORT": "{gameserver.query_port}",
+      "PAL_PUBLIC_PORT": "{gameserver.game_port}",
+      "PAL_PUBLIC_IP": "{config_parameter id=\"public_ip\"}",
+      "PAL_PUBLIC_LOBBY": "{config_parameter id=\"public_lobby\"}",
+      "PAL_REST_PORT": "8212",
+      "PAL_MAX_PLAYERS": "{gameserver.slot_limit}",
+      "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
+      "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
+      "PAL_INSTALL_UE4SS": "{config_parameter id=\"install_ue_ss\"}",
+      "PAL_UE4SS_RELEASE": "{config_parameter id=\"ue_ss_release\"}",
+      "PAL_UE4SS_URL": "{config_parameter id=\"ue_ss_url\"}",
+      "PAL_UE4SS_SHA256": "{config_parameter id=\"ue_ss_sha\"}",
+      "PAL_ALLOW_CLIENT_MOD": "{config_parameter id=\"allow_client_mod\"}",
+      "PAL_USE_BACKUP_SAVE_DATA": "{config_parameter id=\"use_backup_save_data\"}",
+      "PAL_SHOW_JOIN_LEAVE": "{config_parameter id=\"show_join_leave\"}",
+      "PAL_CROSSPLAY_PLATFORMS": "{config_parameter id=\"crossplay_platforms\"}",
+      "PAL_CHAT_POST_LIMIT": "{config_parameter id=\"chat_post_limit\"}",
+      "PAL_PVP_ENABLED": "{config_parameter id=\"pvp_enabled\"}",
+      "PAL_HARDCORE_ENABLED": "{config_parameter id=\"hardcore_enabled\"}",
+      "PAL_DEATH_PENALTY": "{config_parameter id=\"death_penalty\"}",
+      "PAL_INVADER_ENABLED": "{config_parameter id=\"invader_enabled\"}",
+      "PAL_FAST_TRAVEL_ENABLED": "{config_parameter id=\"fast_travel_enabled\"}",
+      "PAL_START_LOCATION_SELECT": "{config_parameter id=\"start_location_select\"}",
+      "PAL_EXP_RATE": "{config_parameter id=\"exp_rate\"}",
+      "PAL_CAPTURE_RATE": "{config_parameter id=\"capture_rate\"}",
+      "PAL_SPAWN_RATE": "{config_parameter id=\"spawn_rate\"}",
+      "PAL_ENEMY_DROP_RATE": "{config_parameter id=\"enemy_drop_rate\"}",
+      "PAL_COLLECTION_DROP_RATE": "{config_parameter id=\"collection_drop_rate\"}",
+      "PAL_DAY_TIME_SPEED_RATE": "{config_parameter id=\"day_time_speed_rate\"}",
+      "PAL_NIGHT_TIME_SPEED_RATE": "{config_parameter id=\"night_time_speed_rate\"}",
+      "PAL_EGG_HATCHING_TIME": "{config_parameter id=\"egg_hatching_time\"}",
+      "PAL_PLAYER_DAMAGE_ATTACK": "{config_parameter id=\"player_damage_attack\"}",
+      "PAL_PLAYER_DAMAGE_DEFENSE": "{config_parameter id=\"player_damage_defense\"}",
+      "PAL_PAL_DAMAGE_ATTACK": "{config_parameter id=\"pal_damage_attack\"}",
+      "PAL_PAL_DAMAGE_DEFENSE": "{config_parameter id=\"pal_damage_defense\"}",
+      "PAL_PLAYER_HUNGER_RATE": "{config_parameter id=\"player_hunger_rate\"}",
+      "PAL_PLAYER_STAMINA_RATE": "{config_parameter id=\"player_stamina_rate\"}",
+      "PAL_PAL_HUNGER_RATE": "{config_parameter id=\"pal_hunger_rate\"}",
+      "PAL_PAL_STAMINA_RATE": "{config_parameter id=\"pal_stamina_rate\"}",
+      "PAL_GUILD_PLAYER_MAX": "{config_parameter id=\"guild_player_max\"}",
+      "PAL_BASE_CAMP_MAX_IN_GUILD": "{config_parameter id=\"base_camp_max_in_guild\"}",
+      "PAL_BASE_CAMP_WORKER_MAX": "{config_parameter id=\"base_camp_worker_max\"}",
+      "PAL_MAX_BUILDING_LIMIT": "{config_parameter id=\"max_building_limit\"}",
+      "PAL_EXTRA_ARGS": "{config_parameter id=\"extra_args\"}"
+    },
+    "mounts": {
+      "{container.home_root}/serverfiles": "c:/serverfiles"
+    }
+  },
+  "dir": {
+    "Serverfiles": {
+      "path": "\\serverfiles",
+      "create": false,
+      "type": "normal"
+    },
+    "Compatibility Logs": {
+      "path": "\\serverfiles\\Logs",
+      "create": true,
+      "type": "logs"
+    },
+    "Bridge Logs": {
+      "path": "\\serverfiles\\TKGBridge",
+      "create": true,
+      "type": "logs"
+    },
+    "Palworld Native Logs": {
+      "path": "\\serverfiles\\Pal\\Saved\\Logs",
+      "create": false,
+      "type": "logs"
+    }
+  },
+  "game": {
+    "server": {
+      "wipe": [
+        "\\serverfiles\\Pal\\Saved\\SaveGames"
+      ],
+      "backup": {
+        "Palworld Saved": "\\serverfiles\\Pal\\Saved",
+        "TKGBridge State": "\\serverfiles\\TKGBridge"
+      },
+      "monitoring": {
+        "type": "container",
+        "recovery_mode": true
+      }
+    },
+    "type": "custom",
+    "config": {
+      "files": {
+        "PalWorldSettings.ini": {
+          "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+          "info": "The container materializes this file on each start from the parameters below.",
+          "disable_edit": "1",
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{config_parameter id=\"admin_password\"}\",ServerPlayerMaxNum={gameserver.slot_limit},PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=False,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bIsShowJoinLeftMessage={config_parameter id=\"show_join_leave\"},bIsUseBackupSaveData={config_parameter id=\"use_backup_save_data\"},bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},ChatPostLimitPerMinute={config_parameter id=\"chat_post_limit\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},bHardcore={config_parameter id=\"hardcore_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},bIsStartLocationSelectByMap={config_parameter id=\"start_location_select\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},EnemyDropItemRate={config_parameter id=\"enemy_drop_rate\"},CollectionDropRate={config_parameter id=\"collection_drop_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"},PlayerDamageRateAttack={config_parameter id=\"player_damage_attack\"},PlayerDamageRateDefense={config_parameter id=\"player_damage_defense\"},PalDamageRateAttack={config_parameter id=\"pal_damage_attack\"},PalDamageRateDefense={config_parameter id=\"pal_damage_defense\"},PlayerStomachDecreaceRate={config_parameter id=\"player_hunger_rate\"},PlayerStaminaDecreaceRate={config_parameter id=\"player_stamina_rate\"},PalStomachDecreaceRate={config_parameter id=\"pal_hunger_rate\"},PalStaminaDecreaceRate={config_parameter id=\"pal_stamina_rate\"},GuildPlayerMaxNum={config_parameter id=\"guild_player_max\"},BaseCampMaxNumInGuild={config_parameter id=\"base_camp_max_in_guild\"},BaseCampWorkerMaxNum={config_parameter id=\"base_camp_worker_max\"},MaxBuildingLimitNum={config_parameter id=\"max_building_limit\"})"
+        }
+      },
+      "parameters": {
+        "server_description": {
+          "name": "Server Description",
+          "info": "Description shown in the Palworld server list.",
+          "section": "Server",
+          "type": "text",
+          "content": "Palworld server hosted with GameServerApp"
+        },
+        "server_password": {
+          "name": "Server Password",
+          "info": "Optional join password.",
+          "section": "Access",
+          "type": "text",
+          "content": ""
+        },
+        "admin_password": {
+          "name": "Admin Password",
+          "info": "Reserved for future first-party control surfaces and in-server admin authentication.",
+          "section": "Access",
+          "type": "text",
+          "content": ""
+        },
+        "public_ip": {
+          "name": "Public IP",
+          "info": "Optional public IPv4 address override.",
+          "section": "Server",
+          "type": "text",
+          "content": ""
+        },
+        "public_lobby": {
+          "name": "Community/Public Lobby",
+          "info": "Adds -publiclobby so the server can appear in the community server list.",
+          "section": "Server",
+          "type": "boolean",
+          "content": "1"
+        },
+        "install_ue_ss": {
+          "name": "Install UE4SS",
+          "info": "Installs the UE4SS loader and stages built-in first-party mods.",
+          "section": "Install",
+          "type": "boolean",
+          "content": "1"
+        },
+        "ue_ss_release": {
+          "name": "UE4SS Release Label",
+          "info": "Reference label for the downloaded UE4SS package.",
+          "section": "Install",
+          "type": "text",
+          "content": "manual"
+        },
+        "ue_ss_url": {
+          "name": "UE4SS Download URL",
+          "info": "Direct zip URL for the approved UE4SS package.",
+          "section": "Install",
+          "type": "text",
+          "content": ""
+        },
+        "ue_ss_sha": {
+          "name": "UE4SS SHA256",
+          "info": "Optional checksum for the UE4SS zip.",
+          "section": "Install",
+          "type": "text",
+          "content": ""
+        },
+        "bridge_trace": {
+          "name": "Bridge Trace Mode",
+          "info": "Writes detailed PalPlayerState property traces to TKGBridge\\trace.log for live hook validation.",
+          "section": "Install",
+          "type": "boolean",
+          "content": "0"
+        },
+        "update_on_start": {
+          "name": "Update On Start",
+          "info": "Runs SteamCMD update when the container starts.",
+          "section": "Install",
+          "type": "boolean",
+          "content": "1"
+        },
+        "validate_on_update": {
+          "name": "Validate On Update",
+          "info": "Adds Steam validation during update. Slower but useful for repair.",
+          "section": "Install",
+          "type": "boolean",
+          "content": "0"
+        },
+        "use_backup_save_data": {
+          "name": "Palworld Save Backups",
+          "info": "Enables Palworld's rotating save backups.",
+          "section": "Server",
+          "type": "boolean",
+          "content": "1"
+        },
+        "show_join_leave": {
+          "name": "Show Join/Leave Messages",
+          "info": "Enables join and leave messaging in Palworld and compatibility outputs.",
+          "section": "Server",
+          "type": "boolean",
+          "content": "1"
+        },
+        "allow_client_mod": {
+          "name": "Allow Modded Clients",
+          "info": "Permits players with client mods to connect.",
+          "section": "Access",
+          "type": "boolean",
+          "content": "0"
+        },
+        "crossplay_platforms": {
+          "name": "Allowed Platforms",
+          "info": "Controls which client platforms may join.",
+          "section": "Access",
+          "type": "array",
+          "dropdown": "{\"All Platforms\":\"(Steam,Xbox,PS5,Mac)\",\"Steam Only\":\"(Steam)\",\"Steam + Xbox\":\"(Steam,Xbox)\",\"Steam + Xbox + PS5\":\"(Steam,Xbox,PS5)\"}"
+        },
+        "chat_post_limit": {
+          "name": "Chat Messages Per Minute",
+          "info": "Maximum chat messages one player may send per minute.",
+          "section": "Access",
+          "type": "text",
+          "content": "10"
+        },
+        "pvp_enabled": {
+          "name": "Enable PvP",
+          "info": "Enables the Palworld PvP-related flags together.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "0"
+        },
+        "hardcore_enabled": {
+          "name": "Hardcore Mode",
+          "info": "Prevents normal respawning after death.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "0"
+        },
+        "death_penalty": {
+          "name": "Death Penalty",
+          "info": "Controls what is dropped on death.",
+          "section": "Gameplay",
+          "type": "array",
+          "dropdown": "{\"All Items + Equipment + Team Pals\":\"All\",\"Items + Equipment\":\"ItemAndEquipment\",\"Items Only\":\"Item\",\"None\":\"None\"}"
+        },
+        "invader_enabled": {
+          "name": "Enable Base Raids",
+          "info": "Allows NPC invasion events against player bases.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "fast_travel_enabled": {
+          "name": "Enable Fast Travel",
+          "info": "Controls whether fast travel is available.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "start_location_select": {
+          "name": "Choose Starting Location",
+          "info": "Lets new characters choose a starting location from the map.",
+          "section": "Gameplay",
+          "type": "boolean",
+          "content": "1"
+        },
+        "exp_rate": {
+          "name": "Experience Rate",
+          "info": "Experience gain multiplier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "capture_rate": {
+          "name": "Pal Capture Rate",
+          "info": "Pal capture chance multiplier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "spawn_rate": {
+          "name": "Pal Spawn Rate",
+          "info": "Wild Pal spawn multiplier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "enemy_drop_rate": {
+          "name": "Enemy Drop Quantity",
+          "info": "Enemy item drop multiplier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "collection_drop_rate": {
+          "name": "Gathering Drop Quantity",
+          "info": "Gathered resource multiplier.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "day_time_speed_rate": {
+          "name": "Daytime Speed",
+          "info": "How quickly daytime passes.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "night_time_speed_rate": {
+          "name": "Nighttime Speed",
+          "info": "How quickly nighttime passes.",
+          "section": "Rates",
+          "type": "text",
+          "content": "1.0"
+        },
+        "egg_hatching_time": {
+          "name": "Huge Egg Incubation Hours",
+          "info": "Base hours required to hatch a huge egg.",
+          "section": "Rates",
+          "type": "text",
+          "content": "72.0"
+        },
+        "player_damage_attack": {
+          "name": "Player Damage Dealt",
+          "info": "Player outgoing damage multiplier.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_damage_defense": {
+          "name": "Player Damage Taken",
+          "info": "Player incoming damage multiplier.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_damage_attack": {
+          "name": "Pal Damage Dealt",
+          "info": "Pal outgoing damage multiplier.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_damage_defense": {
+          "name": "Pal Damage Taken",
+          "info": "Pal incoming damage multiplier.",
+          "section": "Combat",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_hunger_rate": {
+          "name": "Player Hunger Rate",
+          "info": "Player hunger depletion multiplier.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "player_stamina_rate": {
+          "name": "Player Stamina Rate",
+          "info": "Player stamina depletion multiplier.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_hunger_rate": {
+          "name": "Pal Hunger Rate",
+          "info": "Pal hunger depletion multiplier.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "pal_stamina_rate": {
+          "name": "Pal Stamina Rate",
+          "info": "Pal stamina depletion multiplier.",
+          "section": "Survival",
+          "type": "text",
+          "content": "1.0"
+        },
+        "guild_player_max": {
+          "name": "Guild Player Limit",
+          "info": "Maximum players per guild.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "20"
+        },
+        "base_camp_max_in_guild": {
+          "name": "Base Camps Per Guild",
+          "info": "Maximum base camps per guild.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "4"
+        },
+        "base_camp_worker_max": {
+          "name": "Base Camp Worker Limit",
+          "info": "Maximum workers in a base camp.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "15"
+        },
+        "max_building_limit": {
+          "name": "Max Building Limit",
+          "info": "Maximum building limit value.",
+          "section": "World Limits",
+          "type": "text",
+          "content": "0"
+        },
+        "extra_args": {
+          "name": "Extra Launch Arguments",
+          "info": "Additional command-line arguments appended to the server launch.",
+          "section": "Advanced",
+          "type": "text",
+          "content": ""
+        }
+      }
+    }
+  }
+}
