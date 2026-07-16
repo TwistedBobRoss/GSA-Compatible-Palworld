@@ -14,13 +14,13 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v3"
+      "tag": "ltsc2022-cleanroom-v4"
     },
     "automatic_ports": true,
     "envs": {
       "PAL_DATA_DIR": "C:/serverfiles",
       "PAL_STEAMCMD_DIR": "C:/serverfiles/_steamcmd",
-      "PAL_SERVER_ROOT": "C:/serverfiles",
+      "PAL_SERVER_ROOT": "C:/serverfiles/PalServer",
       "PAL_LOG_DIR": "C:/serverfiles/Logs",
       "PAL_BRIDGE_DIR": "C:/serverfiles/TKGBridge",
       "PAL_BRIDGE_TRACE": "{config_parameter id=\"bridge_trace\"}",
@@ -96,7 +96,7 @@
       "type": "logs"
     },
     "Palworld Native Logs": {
-      "path": "\\serverfiles\\Pal\\Saved\\Logs",
+      "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Logs",
       "create": false,
       "type": "logs"
     }
@@ -104,10 +104,10 @@
   "game": {
     "server": {
       "wipe": [
-        "\\serverfiles\\Pal\\Saved\\SaveGames"
+        "\\serverfiles\\PalServer\\Pal\\Saved\\SaveGames"
       ],
       "backup": {
-        "Palworld Saved": "\\serverfiles\\Pal\\Saved",
+        "Palworld Saved": "\\serverfiles\\PalServer\\Pal\\Saved",
         "TKGBridge State": "\\serverfiles\\TKGBridge"
       },
       "monitoring": {
@@ -119,7 +119,7 @@
     "config": {
       "files": {
         "PalWorldSettings.ini": {
-          "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+          "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
           "info": "The container materializes this file on each start from the parameters below.",
           "disable_edit": "1",
           "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{config_parameter id=\"admin_password\"}\",ServerPlayerMaxNum={gameserver.slot_limit},PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=False,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bIsShowJoinLeftMessage={config_parameter id=\"show_join_leave\"},bIsUseBackupSaveData={config_parameter id=\"use_backup_save_data\"},bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},ChatPostLimitPerMinute={config_parameter id=\"chat_post_limit\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},bHardcore={config_parameter id=\"hardcore_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},bIsStartLocationSelectByMap={config_parameter id=\"start_location_select\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},EnemyDropItemRate={config_parameter id=\"enemy_drop_rate\"},CollectionDropRate={config_parameter id=\"collection_drop_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"},PlayerDamageRateAttack={config_parameter id=\"player_damage_attack\"},PlayerDamageRateDefense={config_parameter id=\"player_damage_defense\"},PalDamageRateAttack={config_parameter id=\"pal_damage_attack\"},PalDamageRateDefense={config_parameter id=\"pal_damage_defense\"},PlayerStomachDecreaceRate={config_parameter id=\"player_hunger_rate\"},PlayerStaminaDecreaceRate={config_parameter id=\"player_stamina_rate\"},PalStomachDecreaceRate={config_parameter id=\"pal_hunger_rate\"},PalStaminaDecreaceRate={config_parameter id=\"pal_stamina_rate\"},GuildPlayerMaxNum={config_parameter id=\"guild_player_max\"},BaseCampMaxNumInGuild={config_parameter id=\"base_camp_max_in_guild\"},BaseCampWorkerMaxNum={config_parameter id=\"base_camp_worker_max\"},MaxBuildingLimitNum={config_parameter id=\"max_building_limit\"})"
