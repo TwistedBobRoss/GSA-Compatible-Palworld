@@ -8,7 +8,7 @@ WORKDIR C:\
 
 ENV PAL_DATA_DIR="C:\serverfiles" `
     PAL_STEAMCMD_DIR="C:\serverfiles\_steamcmd" `
-    PAL_SERVER_ROOT="C:\serverfiles" `
+    PAL_SERVER_ROOT="C:\serverfiles\PalServer" `
     PAL_SERVER_NAME="Palworld Server" `
     PAL_SERVER_DESCRIPTION="Palworld server hosted with GameServerApp" `
     PAL_SERVER_PASSWORD="" `
