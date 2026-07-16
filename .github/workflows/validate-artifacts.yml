@@ -1,0 +1,58 @@
+name: Validate clean-room artifacts
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate blueprint JSON
+        shell: powershell
+        run: |
+          Get-Content -Raw "blueprints/gsa-compatible-palworld-windows-cleanroom.json" | ConvertFrom-Json | Out-Null
+
+      - name: Validate startup script syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/Start.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
+      - name: Validate mod files exist
+        shell: powershell
+        run: |
+          $required = @(
+            "mods/TKGBridge/enabled.txt",
+            "mods/TKGBridge/Scripts/main.lua",
+            "docs/ARCHITECTURE.md",
+            "docs/GSABRIDGE-HOOKS.md",
+            "docs/MOD-INTEGRATION.md"
+          )
+
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              Write-Error "Missing required artifact: $path"
+              exit 1
+            }
+          }
