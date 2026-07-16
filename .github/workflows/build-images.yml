@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 60
     env:
       WINDOWS_VERSION: ltsc2022
+      IMAGE_TAG: ltsc2022-cleanroom-v2
 
     steps:
       - name: Checkout
@@ -68,15 +69,15 @@ jobs:
           docker build `
             --build-arg "WINDOWS_VERSION=$env:WINDOWS_VERSION" `
             --file "docker/windows/ltsc2022/Dockerfile" `
-            --tag "${image}:$env:WINDOWS_VERSION-cleanroom" `
-            --tag "${image}:$env:WINDOWS_VERSION-cleanroom-${{ github.sha }}" `
+            --tag "${image}:$env:IMAGE_TAG" `
+            --tag "${image}:$env:IMAGE_TAG-${{ github.sha }}" `
             .
 
       - name: Smoke test packaged files
         shell: powershell
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
-          $image = "ghcr.io/${repository}:$env:WINDOWS_VERSION-cleanroom"
+          $image = "ghcr.io/${repository}:$env:IMAGE_TAG"
           docker run --rm --entrypoint powershell.exe $image `
             -NoLogo -NoProfile -Command `
             "if (-not (Test-Path C:\Start.ps1)) { exit 11 }; if (-not (Test-Path C:\image-mods\TKGBridge\Scripts\main.lua)) { exit 12 }; if (-not (Test-Path C:\image-mods\TKGBridge\enabled.txt)) { exit 13 }"
@@ -89,5 +90,5 @@ jobs:
         run: |
           $repository = "${{ github.repository }}".ToLowerInvariant()
           $image = "ghcr.io/${repository}"
-          docker push "${image}:$env:WINDOWS_VERSION-cleanroom"
-          docker push "${image}:$env:WINDOWS_VERSION-cleanroom-${{ github.sha }}"
+          docker push "${image}:$env:IMAGE_TAG"
+          docker push "${image}:$env:IMAGE_TAG-${{ github.sha }}"
