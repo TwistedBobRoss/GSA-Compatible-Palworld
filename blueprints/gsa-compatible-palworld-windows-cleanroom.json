@@ -14,7 +14,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v5"
+      "tag": "ltsc2022-cleanroom-v6"
     },
     "automatic_ports": true,
     "envs": {
