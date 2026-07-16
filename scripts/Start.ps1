@@ -235,11 +235,13 @@ function Invoke-PalworldInstall {
     if ($exitCode -ne 0) {
         $resolvedLayout = Resolve-PalworldLayout -PreferredRoot $ServerRoot -SearchRoot $SearchRoot
         $installLooksUsable = ($null -ne $resolvedLayout) -and
-            (Test-Path -LiteralPath $resolvedLayout.ServerExe) -and
-            (Test-Path -LiteralPath $resolvedLayout.DefaultConfigPath)
+            (Test-Path -LiteralPath $resolvedLayout.ServerExe)
 
         if ($exitCode -eq 7 -and $installLooksUsable) {
             Write-Warning "SteamCMD returned exit code 7 after a usable Palworld install/update. Continuing."
+            if (-not (Test-Path -LiteralPath $resolvedLayout.DefaultConfigPath)) {
+                Write-Warning "DefaultPalWorldSettings.ini was not discovered; the launcher will bootstrap PalWorldSettings.ini directly."
+            }
             return
         }
 
@@ -351,11 +353,16 @@ function Initialize-PalworldConfig {
     Ensure-Directory -Path $configDirectory
 
     if (-not (Test-Path -LiteralPath $ConfigPath)) {
-        if (-not (Test-Path -LiteralPath $DefaultConfigPath)) {
-            throw "DefaultPalWorldSettings.ini was not found at $DefaultConfigPath."
+        if (Test-Path -LiteralPath $DefaultConfigPath) {
+            Copy-Item -LiteralPath $DefaultConfigPath -Destination $ConfigPath -Force
+        } else {
+            Write-Warning "DefaultPalWorldSettings.ini was not found. Creating a minimal PalWorldSettings.ini template."
+            $seedContent = @(
+                "[/Script/Pal.PalGameWorldSettings]",
+                "OptionSettings=()"
+            ) -join "`r`n"
+            [IO.File]::WriteAllText($ConfigPath, $seedContent, [Text.UTF8Encoding]::new($false))
         }
-
-        Copy-Item -LiteralPath $DefaultConfigPath -Destination $ConfigPath -Force
     }
 
     $content = Get-Content -LiteralPath $ConfigPath -Raw
