@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-Write-Host "*** IMAGE MARKER: v17-2026-07-17-01"
+Write-Host "*** IMAGE MARKER: v18-2026-07-17-01"
 
 function Get-EnvOrDefault {
     param(
@@ -440,6 +440,7 @@ $steamCmdRoot = Get-EnvOrDefault -Name "PAL_STEAMCMD_DIR" -Default (Join-Path $d
 $logsDir = Get-EnvOrDefault -Name "PAL_LOG_DIR" -Default (Join-Path $dataDir "Logs")
 $modsSourceRoot = Get-EnvOrDefault -Name "PAL_MODS_DIR" -Default "C:\image-mods"
 $bridgeDir = Get-EnvOrDefault -Name "PAL_BRIDGE_DIR" -Default (Join-Path $dataDir "TKGBridge")
+$wrapperExe = Get-EnvOrDefault -Name "PAL_CONSOLE_HOST" -Default "C:\PalConHost\PalConHost.exe"
 $serverRoot = Get-EnvOrDefault -Name "PAL_SERVER_ROOT" -Default $dataDir
 $serverName = Get-EnvOrDefault -Name "PAL_SERVER_NAME" -Default "Palworld Server"
 $serverDescription = Get-EnvOrDefault -Name "PAL_SERVER_DESCRIPTION" -Default "Palworld server hosted with GameServerApp"
@@ -461,6 +462,7 @@ $spawnRate = Get-EnvOrDefault -Name "PAL_SPAWN_RATE" -Default "1.0"
 $dayTimeSpeedRate = Get-EnvOrDefault -Name "PAL_DAY_TIME_SPEED_RATE" -Default "1.0"
 $nightTimeSpeedRate = Get-EnvOrDefault -Name "PAL_NIGHT_TIME_SPEED_RATE" -Default "1.0"
 $eggHatchingTime = Get-EnvOrDefault -Name "PAL_EGG_HATCHING_TIME" -Default "72.0"
+$captureMode = Get-EnvOrDefault -Name "PAL_CAPTURE_MODE" -Default "conpty"
 $extraArgs = Get-EnvOrDefault -Name "PAL_EXTRA_ARGS" -Default ""
 
 $gsaSteamMode = Get-BoolEnv -Name "PAL_GSA_STEAM_MODE" -Default $false
@@ -530,6 +532,12 @@ $defaultConfigPath = $serverLayout.DefaultConfigPath
 $configPath = $serverLayout.ConfigPath
 $win64Dir = $serverLayout.Win64Dir
 $workingDir = $serverLayout.WorkingDir
+$nativeLogsDir = $serverLayout.NativeLogsDir
+$nativeConsoleLog = Join-Path $nativeLogsDir "PalServer.log"
+$chatTranscriptLog = Join-Path $logsDir "PalServer-chat.log"
+$eventTranscriptLog = Join-Path $logsDir "PalServer-events.log"
+
+Ensure-Directory -Path $nativeLogsDir
 
 $settings = @{
     "ServerName" = '"' + (Escape-PalString $serverName) + '"'
@@ -606,15 +614,47 @@ Write-Host ("*** Executable: " + $serverExe)
 Write-Host ("*** Working directory: " + $workingDir)
 Write-Host ("*** Config: " + $configPath)
 Write-Host ("*** Logs directory: " + $logsDir)
+Write-Host ("*** Native logs directory: " + $nativeLogsDir)
 Write-Host ("*** Bridge directory: " + $bridgeDir)
+Write-Host ("*** Console host: " + $wrapperExe)
 Write-Host ("*** GSA + Steam mode: " + $gsaSteamMode)
 Write-Host ("*** Update on start: " + $updateOnStart)
 Write-Host ("*** Bridge trace: " + $bridgeTrace)
 Write-Host ("*** Launch args: " + ($launchArgs -join " "))
 
+$launchExe = $serverExe
+$launchInvocationArgs = $launchArgs
+
+if (Test-Path -LiteralPath $wrapperExe) {
+    $launchExe = $wrapperExe
+    $launchInvocationArgs = @(
+        "--exe", $serverExe,
+        "--workdir", $workingDir,
+        "--log", $nativeConsoleLog,
+        "--chat-log", $chatTranscriptLog,
+        "--event-log", $eventTranscriptLog,
+        "--capture-mode", $captureMode
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($adminPassword)) {
+        $launchInvocationArgs += @(
+            "--rest-url", "http://127.0.0.1:$restPort",
+            "--rest-user", "admin",
+            "--rest-password", $adminPassword,
+            "--shutdown-wait", "15",
+            "--poll-seconds", "10"
+        )
+    }
+
+    $launchInvocationArgs += "--"
+    $launchInvocationArgs += $launchArgs
+} else {
+    Write-Warning "PalConHost wrapper was not found. Falling back to direct server launch without native Windows log capture."
+}
+
 Push-Location $workingDir
 try {
-    & $serverExe @launchArgs
+    & $launchExe @launchInvocationArgs
     exit $LASTEXITCODE
 }
 finally {
