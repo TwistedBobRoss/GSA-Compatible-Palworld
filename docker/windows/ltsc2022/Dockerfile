@@ -8,19 +8,20 @@ WORKDIR C:\
 
 ENV PAL_DATA_DIR="C:\serverfiles" `
     PAL_STEAMCMD_DIR="C:\serverfiles\_steamcmd" `
-    PAL_SERVER_ROOT="C:\serverfiles\PalServer" `
+    PAL_SERVER_ROOT="C:\serverfiles" `
+    PAL_GSA_STEAM_MODE="true" `
     PAL_SERVER_NAME="Palworld Server" `
     PAL_SERVER_DESCRIPTION="Palworld server hosted with GameServerApp" `
     PAL_SERVER_PASSWORD="" `
     PAL_ADMIN_PASSWORD="" `
-    PAL_GAME_PORT="8211" `
+    PAL_GAME_PORT="7777" `
     PAL_QUERY_PORT="27015" `
-    PAL_REST_PORT="8212" `
-    PAL_PUBLIC_PORT="8211" `
+    PAL_REST_PORT="8080" `
+    PAL_PUBLIC_PORT="7777" `
     PAL_PUBLIC_IP="" `
     PAL_PUBLIC_LOBBY="true" `
     PAL_MAX_PLAYERS="32" `
-    PAL_UPDATE_ON_START="true" `
+    PAL_UPDATE_ON_START="false" `
     PAL_VALIDATE_ON_UPDATE="false" `
     PAL_LOG_DIR="C:\serverfiles\Logs" `
     PAL_BRIDGE_DIR="C:\serverfiles\TKGBridge" `
@@ -65,7 +66,7 @@ ENV PAL_DATA_DIR="C:\serverfiles" `
 COPY scripts\Start.ps1 C:\Start.ps1
 COPY mods C:\image-mods
 
-EXPOSE 8211/udp
+EXPOSE 7777/udp
 EXPOSE 27015/udp
 
 ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", "C:\\Start.ps1"]
