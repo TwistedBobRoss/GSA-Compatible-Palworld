@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-Write-Host "*** IMAGE MARKER: v15-2026-07-17-01"
+Write-Host "*** IMAGE MARKER: v16-2026-07-17-01"
 
 function Get-EnvOrDefault {
     param(
@@ -441,7 +441,7 @@ $rconPort = Get-EnvOrDefault -Name "PAL_RCON_PORT" -Default "37015"
 $restPort = Get-EnvOrDefault -Name "PAL_REST_PORT" -Default "8080"
 $publicPort = Get-EnvOrDefault -Name "PAL_PUBLIC_PORT" -Default $gamePort
 $slotLimit = Get-EnvOrDefault -Name "PAL_MAX_PLAYERS" -Default "32"
-$crossplayPlatforms = Get-EnvOrDefault -Name "PAL_CROSSPLAY_PLATFORMS" -Default "(Steam,Xbox,PS5,Mac)"
+$crossplayPlatforms = Get-EnvOrDefault -Name "PAL_CROSSPLAY_PLATFORMS" -Default '("Steam","Xbox","PS5","Mac")'
 $deathPenalty = Get-EnvOrDefault -Name "PAL_DEATH_PENALTY" -Default "All"
 $expRate = Get-EnvOrDefault -Name "PAL_EXP_RATE" -Default "1.0"
 $captureRate = Get-EnvOrDefault -Name "PAL_CAPTURE_RATE" -Default "1.0"
@@ -533,7 +533,7 @@ $settings = @{
     "RCONPort" = $rconPort
     "RESTAPIEnabled" = "True"
     "RESTAPIPort" = $restPort
-    "LogFormatType" = "Text"
+    "LogFormatType" = '"Text"'
     "bAllowClientMod" = ConvertTo-PalBoolean $allowClientMod
     "CrossplayPlatforms" = $crossplayPlatforms
     "bIsPvP" = ConvertTo-PalBoolean $pvpEnabled
@@ -542,6 +542,7 @@ $settings = @{
     "DeathPenalty" = $deathPenalty
     "bEnableInvaderEnemy" = ConvertTo-PalBoolean $invaderEnabled
     "bEnableFastTravel" = ConvertTo-PalBoolean $fastTravelEnabled
+    "bUseAuth" = "True"
     "ExpRate" = $expRate
     "PalCaptureRate" = $captureRate
     "PalSpawnNumRate" = $spawnRate
@@ -560,9 +561,11 @@ Write-Host ("*** Installed built-in mods: " + ($(if ($enabledMods.Count -gt 0) {
 $launchArgs = @(
     "-port=$gamePort",
     "-players=$slotLimit",
-    "-queryport=$queryPort",
+    "-servername=$serverName",
     "-publicport=$publicPort",
     "-adminpassword=$adminPassword",
+    "EpicApp=PalServer",
+    "-RCONEnabled",
     "-RCONPort=$rconPort",
     "-logformat=text",
     "-useperfthreads",
@@ -573,6 +576,8 @@ $launchArgs = @(
 if ($publicLobby) {
     $launchArgs += "-publiclobby"
 }
+
+$launchArgs += "-crossplay"
 
 if (-not [string]::IsNullOrWhiteSpace($publicIp)) {
     $launchArgs += "-publicip=$publicIp"
