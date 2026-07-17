@@ -1,14 +1,14 @@
 # escape=`
 ARG WINDOWS_VERSION=ltsc2022
-FROM mcr.microsoft.com/windows/servercore:${WINDOWS_VERSION}
+FROM gameserverapp/dediconnect-windows:${WINDOWS_VERSION}-ue5
 
 SHELL ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command"]
 
 WORKDIR C:\
 
-ENV PAL_DATA_DIR="C:\serverfiles" `
-    PAL_STEAMCMD_DIR="C:\serverfiles\_steamcmd" `
-    PAL_SERVER_ROOT="C:\serverfiles" `
+ENV PAL_DATA_DIR="C:\Users\ContainerUser\serverfiles" `
+    PAL_STEAMCMD_DIR="C:\Users\ContainerUser\serverfiles\_steamcmd" `
+    PAL_SERVER_ROOT="C:\Users\ContainerUser\serverfiles" `
     PAL_GSA_STEAM_MODE="true" `
     PAL_SERVER_NAME="Palworld Server" `
     PAL_SERVER_DESCRIPTION="Palworld server hosted with GameServerApp" `
@@ -23,8 +23,8 @@ ENV PAL_DATA_DIR="C:\serverfiles" `
     PAL_MAX_PLAYERS="32" `
     PAL_UPDATE_ON_START="false" `
     PAL_VALIDATE_ON_UPDATE="false" `
-    PAL_LOG_DIR="C:\serverfiles\Logs" `
-    PAL_BRIDGE_DIR="C:\serverfiles\TKGBridge" `
+    PAL_LOG_DIR="C:\Users\ContainerUser\serverfiles\logs" `
+    PAL_BRIDGE_DIR="C:\Users\ContainerUser\serverfiles\TKGBridge" `
     PAL_BRIDGE_TRACE="false" `
     PAL_MODS_DIR="C:\image-mods" `
     PAL_UE4SS_RELEASE="v3.0.1" `
@@ -33,7 +33,7 @@ ENV PAL_DATA_DIR="C:\serverfiles" `
     PAL_ALLOW_CLIENT_MOD="false" `
     PAL_USE_BACKUP_SAVE_DATA="true" `
     PAL_SHOW_JOIN_LEAVE="true" `
-    PAL_CROSSPLAY_PLATFORMS="(Steam,Xbox,PS5,Mac)" `
+    PAL_CROSSPLAY_PLATFORMS="(""Steam"",""Xbox"",""PS5"",""Mac"")" `
     PAL_CHAT_POST_LIMIT="10" `
     PAL_PVP_ENABLED="false" `
     PAL_HARDCORE_ENABLED="false" `
@@ -68,5 +68,3 @@ COPY mods C:\image-mods
 
 EXPOSE 7777/udp
 EXPOSE 27015/udp
-
-ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-File", "C:\\Start.ps1"]
