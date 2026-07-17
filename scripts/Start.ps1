@@ -389,7 +389,7 @@ $steamCmdRoot = Get-EnvOrDefault -Name "PAL_STEAMCMD_DIR" -Default (Join-Path $d
 $logsDir = Get-EnvOrDefault -Name "PAL_LOG_DIR" -Default (Join-Path $dataDir "Logs")
 $modsSourceRoot = Get-EnvOrDefault -Name "PAL_MODS_DIR" -Default "C:\image-mods"
 $bridgeDir = Get-EnvOrDefault -Name "PAL_BRIDGE_DIR" -Default (Join-Path $dataDir "TKGBridge")
-$serverRoot = Get-EnvOrDefault -Name "PAL_SERVER_ROOT" -Default (Join-Path $dataDir "PalServer")
+$serverRoot = Get-EnvOrDefault -Name "PAL_SERVER_ROOT" -Default $dataDir
 $serverName = Get-EnvOrDefault -Name "PAL_SERVER_NAME" -Default "Palworld Server"
 $serverDescription = Get-EnvOrDefault -Name "PAL_SERVER_DESCRIPTION" -Default "Palworld server hosted with GameServerApp"
 $serverPassword = Get-EnvOrDefault -Name "PAL_SERVER_PASSWORD" -Default ""
@@ -412,8 +412,9 @@ $nightTimeSpeedRate = Get-EnvOrDefault -Name "PAL_NIGHT_TIME_SPEED_RATE" -Defaul
 $eggHatchingTime = Get-EnvOrDefault -Name "PAL_EGG_HATCHING_TIME" -Default "72.0"
 $extraArgs = Get-EnvOrDefault -Name "PAL_EXTRA_ARGS" -Default ""
 
+$gsaSteamMode = Get-BoolEnv -Name "PAL_GSA_STEAM_MODE" -Default $false
 $publicLobby = Get-BoolEnv -Name "PAL_PUBLIC_LOBBY" -Default $true
-$updateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default $true
+$updateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default (-not $gsaSteamMode)
 $validateOnUpdate = Get-BoolEnv -Name "PAL_VALIDATE_ON_UPDATE" -Default $false
 $bridgeTrace = Get-BoolEnv -Name "PAL_BRIDGE_TRACE" -Default $false
 $allowClientMod = Get-BoolEnv -Name "PAL_ALLOW_CLIENT_MOD" -Default $false
@@ -524,6 +525,7 @@ Write-Host ("*** Executable: " + $serverExe)
 Write-Host ("*** Config: " + $configPath)
 Write-Host ("*** Logs directory: " + $logsDir)
 Write-Host ("*** Bridge directory: " + $bridgeDir)
+Write-Host ("*** GSA + Steam mode: " + $gsaSteamMode)
 Write-Host ("*** Bridge trace: " + $bridgeTrace)
 Write-Host ("*** Launch args: " + ($launchArgs -join " "))
 
