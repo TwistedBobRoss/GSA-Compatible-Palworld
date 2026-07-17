@@ -7,6 +7,10 @@
         "port": "8211",
         "multiplier": "1"
       },
+      "rcon": {
+        "port": "37015",
+        "multiplier": "1"
+      },
       "query": {
         "port": "27015",
         "multiplier": "1"
@@ -14,7 +18,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v9"
+      "tag": "ltsc2022-cleanroom-v10"
     },
     "automatic_ports": true,
     "envs": {
@@ -23,14 +27,16 @@
       "PAL_SERVER_ROOT": "C:/serverfiles/PalServer",
       "PAL_LOG_DIR": "C:/serverfiles/Logs",
       "PAL_BRIDGE_DIR": "C:/serverfiles/TKGBridge",
+      "PAL_BRIDGE_TRACE": "{config_parameter id=\"bridge_trace\"}",
       "PAL_MODS_DIR": "C:/image-mods",
       "PAL_SERVER_NAME": "{gameserver.list_name}",
       "PAL_SERVER_DESCRIPTION": "{config_parameter id=\"server_description\"}",
       "PAL_SERVER_PASSWORD": "{config_parameter id=\"server_password\"}",
-      "PAL_ADMIN_PASSWORD": "{config_parameter id=\"admin_password\"}",
+      "PAL_ADMIN_PASSWORD": "{gameserver.rcon_password}",
       "PAL_REGION": "{config_parameter id=\"region\"}",
       "PAL_GAME_PORT": "{gameserver.game_port}",
       "PAL_QUERY_PORT": "{gameserver.query_port}",
+      "PAL_RCON_PORT": "{gameserver.rcon_port}",
       "PAL_PUBLIC_PORT": "{gameserver.game_port}",
       "PAL_PUBLIC_IP": "{config_parameter id=\"public_ip\"}",
       "PAL_PUBLIC_LOBBY": "{config_parameter id=\"public_lobby\"}",
@@ -87,6 +93,16 @@
         "Palworld Saved": "\\serverfiles\\PalServer\\Pal\\Saved",
         "TKGBridge State": "\\serverfiles\\TKGBridge"
       },
+      "command_control": {
+        "type": "rest_local",
+        "commands": {
+          "save": "{\"url\":\"http://localhost:8212/v1/api/save\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"\"}",
+          "broadcast": "{\"url\":\"http://localhost:8212/v1/api/announce\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"message\\\": \\\"{message}\\\"}\"}",
+          "kick": "{\"url\":\"http://localhost:8212/v1/api/kick\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
+          "ban": "{\"url\":\"http://localhost:8212/v1/api/ban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
+          "unban": "{\"url\":\"http://localhost:8212/v1/api/unban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\"}\"}"
+        }
+      },
       "monitoring": {
         "type": "container",
         "recovery_mode": true
@@ -99,7 +115,7 @@
           "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
           "info": "You can edit this file directly for advanced settings. The launcher refreshes the common startup, server-list, and Gameplay Settings values below on boot.",
           "disable_edit": "0",
-          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{config_parameter id=\"admin_password\"}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=False,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
         }
       },
       "parameters": {
@@ -113,13 +129,6 @@
         "server_password": {
           "name": "Server Password",
           "info": "Optional join password.",
-          "section": "Access",
-          "type": "text",
-          "content": ""
-        },
-        "admin_password": {
-          "name": "Admin Password",
-          "info": "Reserved for future first-party control surfaces and in-server admin authentication.",
           "section": "Access",
           "type": "text",
           "content": ""
@@ -156,6 +165,13 @@
           "name": "Validate On Update",
           "info": "Adds Steam validation during update. Slower but useful for repair.",
           "section": "Install",
+          "type": "boolean",
+          "content": "0"
+        },
+        "bridge_trace": {
+          "name": "TKG Trace Mode",
+          "info": "Writes deeper TKGBridge hook and player-state diagnostics to TKGBridge\\trace.log.",
+          "section": "Advanced",
           "type": "boolean",
           "content": "0"
         },
