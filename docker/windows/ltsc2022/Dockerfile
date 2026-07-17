@@ -1,5 +1,21 @@
 # escape=`
 ARG WINDOWS_VERSION=server-2022
+FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 AS palconhost-build
+
+SHELL ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command"]
+
+WORKDIR C:\src
+COPY src\PalConHost\PalConHost.csproj C:\src\PalConHost\
+COPY src\PalConHost\Program.cs C:\src\PalConHost\
+RUN dotnet publish C:\src\PalConHost\PalConHost.csproj `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    /p:PublishSingleFile=true `
+    /p:DebugType=None `
+    /p:DebugSymbols=false `
+    -o C:\out
+
 FROM gameserverapp/dediconnect-windows:${WINDOWS_VERSION}-ue5
 
 SHELL ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command"]
@@ -26,6 +42,7 @@ ENV PAL_DATA_DIR="C:\Users\ContainerUser\serverfiles" `
     PAL_LOG_DIR="C:\Users\ContainerUser\serverfiles\logs" `
     PAL_BRIDGE_DIR="C:\Users\ContainerUser\serverfiles\TKGBridge" `
     PAL_BRIDGE_TRACE="false" `
+    PAL_CAPTURE_MODE="conpty" `
     PAL_MODS_DIR="C:\image-mods" `
     PAL_UE4SS_RELEASE="v3.0.1" `
     PAL_UE4SS_URL="https://github.com/UE4SS-RE/RE-UE4SS/releases/download/v3.0.1/UE4SS_v3.0.1.zip" `
@@ -65,6 +82,7 @@ ENV PAL_DATA_DIR="C:\Users\ContainerUser\serverfiles" `
 
 COPY scripts\Start.ps1 C:\Start.ps1
 COPY mods C:\image-mods
+COPY --from=palconhost-build C:\out\PalConHost.exe C:\PalConHost\PalConHost.exe
 
 EXPOSE 7777/udp
 EXPOSE 27015/udp
