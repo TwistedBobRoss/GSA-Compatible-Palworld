@@ -39,12 +39,19 @@ jobs:
             exit 1
           }
 
+      - name: Validate PalConHost build
+        shell: powershell
+        run: |
+          dotnet build "src/PalConHost/PalConHost.csproj" -c Release
+
       - name: Validate mod files exist
         shell: powershell
         run: |
           $required = @(
             "mods/TKGBridge/enabled.txt",
             "mods/TKGBridge/Scripts/main.lua",
+            "src/PalConHost/PalConHost.csproj",
+            "src/PalConHost/Program.cs",
             "docs/ARCHITECTURE.md",
             "docs/GSABRIDGE-HOOKS.md",
             "docs/MOD-INTEGRATION.md"
