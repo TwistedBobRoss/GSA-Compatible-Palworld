@@ -9,7 +9,7 @@ This repo treats first-party mods as small event adapters that live inside the P
 The launcher is responsible for:
 
 - installing the official Palworld dedicated server
-- optionally installing UE4SS
+- installing the pinned UE4SS bootstrap used by this image
 - copying first-party mods from `mods/` into the active UE4SS mods directory
 - writing a deterministic `mods.txt` manifest with built-in debugging and cheat mods disabled
 
