@@ -14,7 +14,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v8"
+      "tag": "ltsc2022-cleanroom-v9"
     },
     "automatic_ports": true,
     "envs": {
@@ -40,6 +40,16 @@
       "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
       "PAL_ALLOW_CLIENT_MOD": "{config_parameter id=\"allow_client_mod\"}",
       "PAL_CROSSPLAY_PLATFORMS": "{config_parameter id=\"crossplay_platforms\"}",
+      "PAL_PVP_ENABLED": "{config_parameter id=\"pvp_enabled\"}",
+      "PAL_DEATH_PENALTY": "{config_parameter id=\"death_penalty\"}",
+      "PAL_INVADER_ENABLED": "{config_parameter id=\"invader_enabled\"}",
+      "PAL_FAST_TRAVEL_ENABLED": "{config_parameter id=\"fast_travel_enabled\"}",
+      "PAL_EXP_RATE": "{config_parameter id=\"exp_rate\"}",
+      "PAL_CAPTURE_RATE": "{config_parameter id=\"capture_rate\"}",
+      "PAL_SPAWN_RATE": "{config_parameter id=\"spawn_rate\"}",
+      "PAL_DAY_TIME_SPEED_RATE": "{config_parameter id=\"day_time_speed_rate\"}",
+      "PAL_NIGHT_TIME_SPEED_RATE": "{config_parameter id=\"night_time_speed_rate\"}",
+      "PAL_EGG_HATCHING_TIME": "{config_parameter id=\"egg_hatching_time\"}",
       "PAL_EXTRA_ARGS": "{config_parameter id=\"extra_args\"}"
     },
     "mounts": {
@@ -87,9 +97,9 @@
       "files": {
         "PalWorldSettings.ini": {
           "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
-          "info": "You can edit this file directly for advanced settings. The launcher only refreshes the common startup and server-list fields below on boot.",
+          "info": "You can edit this file directly for advanced settings. The launcher refreshes the common startup, server-list, and Gameplay Settings values below on boot.",
           "disable_edit": "0",
-          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{config_parameter id=\"admin_password\"}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=False,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"})"
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{config_parameter id=\"admin_password\"}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=False,RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
         }
       },
       "parameters": {
@@ -162,6 +172,76 @@
           "section": "Access",
           "type": "array",
           "dropdown": "{\"All Platforms\":\"(Steam,Xbox,PS5,Mac)\",\"Steam Only\":\"(Steam)\",\"Steam + Xbox\":\"(Steam,Xbox)\",\"Steam + Xbox + PS5\":\"(Steam,Xbox,PS5)\"}"
+        },
+        "pvp_enabled": {
+          "name": "Enable PvP",
+          "info": "Turns on Palworld's PvP-related damage flags together.",
+          "section": "Gameplay Settings",
+          "type": "boolean",
+          "content": "0"
+        },
+        "death_penalty": {
+          "name": "Death Penalty",
+          "info": "Controls what players drop on death.",
+          "section": "Gameplay Settings",
+          "type": "array",
+          "dropdown": "{\"All Items + Equipment + Team Pals\":\"All\",\"Items + Equipment\":\"ItemAndEquipment\",\"Items Only\":\"Item\",\"None\":\"None\"}"
+        },
+        "invader_enabled": {
+          "name": "Enable Base Raids",
+          "info": "Allows NPC raid events against player bases.",
+          "section": "Gameplay Settings",
+          "type": "boolean",
+          "content": "1"
+        },
+        "fast_travel_enabled": {
+          "name": "Enable Fast Travel",
+          "info": "Controls whether players can fast travel.",
+          "section": "Gameplay Settings",
+          "type": "boolean",
+          "content": "1"
+        },
+        "exp_rate": {
+          "name": "Experience Rate",
+          "info": "Experience gain multiplier.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "1.0"
+        },
+        "capture_rate": {
+          "name": "Pal Capture Rate",
+          "info": "Pal capture chance multiplier.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "1.0"
+        },
+        "spawn_rate": {
+          "name": "Pal Spawn Rate",
+          "info": "Wild Pal spawn multiplier.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "1.0"
+        },
+        "day_time_speed_rate": {
+          "name": "Daytime Speed",
+          "info": "How quickly daytime passes.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "1.0"
+        },
+        "night_time_speed_rate": {
+          "name": "Nighttime Speed",
+          "info": "How quickly nighttime passes.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "1.0"
+        },
+        "egg_hatching_time": {
+          "name": "Huge Egg Incubation Hours",
+          "info": "Base hours required to hatch a huge egg.",
+          "section": "Gameplay Settings",
+          "type": "text",
+          "content": "72.0"
         },
         "extra_args": {
           "name": "Extra Launch Arguments",
