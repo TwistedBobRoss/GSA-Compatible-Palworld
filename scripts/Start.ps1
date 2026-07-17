@@ -108,23 +108,34 @@ function Install-SteamCmd {
 function Resolve-PalworldLayout {
     param(
         [Parameter(Mandatory = $true)][string]$PreferredRoot,
-        [Parameter(Mandatory = $true)][string]$SearchRoot
+        [Parameter(Mandatory = $true)][string]$SearchRoot,
+        [bool]$IncludeSteamCmdFallback = $true
     )
 
     $steamCmdRoot = Join-Path $SearchRoot "_steamcmd"
     $candidateRoots = @(
         $PreferredRoot,
-        $SearchRoot,
-        $steamCmdRoot
-    ) | Select-Object -Unique
+        $SearchRoot
+    )
+
+    if ($IncludeSteamCmdFallback) {
+        $candidateRoots += $steamCmdRoot
+    }
+
+    $candidateRoots = $candidateRoots | Select-Object -Unique
 
     $candidateExePaths = @(
         (Join-Path $PreferredRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
         (Join-Path $PreferredRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
         (Join-Path $SearchRoot "Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
-        (Join-Path $SearchRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe"),
-        (Join-Path $steamCmdRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe")
-    ) | Select-Object -Unique
+        (Join-Path $SearchRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe")
+    )
+
+    if ($IncludeSteamCmdFallback) {
+        $candidateExePaths += (Join-Path $steamCmdRoot "steamapps\common\PalServer\Pal\Binaries\Win64\PalServer-Win64-Shipping-Cmd.exe")
+    }
+
+    $candidateExePaths = $candidateExePaths | Select-Object -Unique
 
     $serverExe = $null
     foreach ($candidate in $candidateExePaths) {
@@ -146,6 +157,10 @@ function Resolve-PalworldLayout {
                 -File `
                 -Recurse `
                 -ErrorAction SilentlyContinue |
+                Where-Object {
+                    $IncludeSteamCmdFallback -or
+                    -not $_.FullName.StartsWith($steamCmdRoot, [StringComparison]::OrdinalIgnoreCase)
+                } |
                 Select-Object -First 1
 
             if ($null -ne $match) {
@@ -432,19 +447,42 @@ $serverExe = $null
 $defaultConfigPath = $null
 $configPath = $null
 $win64Dir = $null
+$gsaAlternateServerRoot = "C:\Users\ContainerUser\serverfiles"
+$allowSteamCmdFallback = -not $gsaSteamMode
 
 Ensure-Directory -Path $dataDir
 Ensure-Directory -Path $logsDir
 Ensure-Directory -Path $bridgeDir
 Ensure-Directory -Path $serverRoot
 
-Install-SteamCmd -SteamCmdPath $steamCmdPath -InstallRoot $steamCmdRoot
+$serverLayout = Resolve-PalworldLayout `
+    -PreferredRoot $serverRoot `
+    -SearchRoot $dataDir `
+    -IncludeSteamCmdFallback $allowSteamCmdFallback
 
-$serverLayout = Resolve-PalworldLayout -PreferredRoot $serverRoot -SearchRoot $dataDir
+if ($null -eq $serverLayout -and
+    $gsaSteamMode -and
+    -not $gsaAlternateServerRoot.Equals($serverRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    $serverLayout = Resolve-PalworldLayout `
+        -PreferredRoot $gsaAlternateServerRoot `
+        -SearchRoot $gsaAlternateServerRoot `
+        -IncludeSteamCmdFallback $false
+    if ($null -ne $serverLayout) {
+        $serverRoot = $gsaAlternateServerRoot
+    }
+}
 
-if ($updateOnStart -or $null -eq $serverLayout) {
+if ($null -eq $serverLayout -and $gsaSteamMode) {
+    throw "GSA + Steam mode could not find Palworld server files under $serverRoot or $gsaAlternateServerRoot. Check that the blueprint mount uses {host.container_root}/serverfiles and that GSA is using the updated image and blueprint."
+}
+
+if ($updateOnStart -or ($null -eq $serverLayout -and -not $gsaSteamMode)) {
+    Install-SteamCmd -SteamCmdPath $steamCmdPath -InstallRoot $steamCmdRoot
     Invoke-PalworldInstall -SteamCmdPath $steamCmdPath -ServerRoot $serverRoot -SearchRoot $dataDir -Validate $validateOnUpdate
-    $serverLayout = Resolve-PalworldLayout -PreferredRoot $serverRoot -SearchRoot $dataDir
+    $serverLayout = Resolve-PalworldLayout `
+        -PreferredRoot $serverRoot `
+        -SearchRoot $dataDir `
+        -IncludeSteamCmdFallback $allowSteamCmdFallback
 }
 
 if ($null -eq $serverLayout) {
