@@ -28,6 +28,7 @@ The initial target is a Windows-first image with four layers:
 
 - Provides the minimum runtime hook surface for our own mods
 - Is the only intended third-party framework dependency
+- Is installed automatically by the clean-room bootstrap rather than selected per server
 
 ### First-party mods
 
