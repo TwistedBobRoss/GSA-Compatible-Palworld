@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 60
     env:
       WINDOWS_VERSION: ltsc2022
-      IMAGE_TAG: ltsc2022-cleanroom-v7
+      IMAGE_TAG: ltsc2022-cleanroom-v8
 
     steps:
       - name: Checkout
