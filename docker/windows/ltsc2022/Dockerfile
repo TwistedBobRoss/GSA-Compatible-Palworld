@@ -1,5 +1,5 @@
 # escape=`
-ARG WINDOWS_VERSION=ltsc2022
+ARG WINDOWS_VERSION=server-2022
 FROM gameserverapp/dediconnect-windows:${WINDOWS_VERSION}-ue5
 
 SHELL ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass", "-Command"]
