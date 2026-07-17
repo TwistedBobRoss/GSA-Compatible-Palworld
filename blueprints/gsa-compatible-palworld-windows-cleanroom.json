@@ -1,7 +1,7 @@
 {
   "_version": 3,
   "blueprint": {
-    "version": "1.2.4",
+    "version": "1.2.5",
     "name": "GSA-Compatible Palworld",
     "app_id": 17,
     "os": "Windows"
@@ -27,7 +27,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v16"
+      "tag": "ltsc2022-cleanroom-v17"
     },
     "automatic_ports": true,
     "envs": {
@@ -48,7 +48,7 @@
       "PAL_QUERY_PORT": "{gameserver.query_port}",
       "PAL_RCON_PORT": "{gameserver.rcon_port}",
       "PAL_PUBLIC_PORT": "{gameserver.game_port}",
-      "PAL_PUBLIC_IP": "{config_parameter id=\"public_ip\"}",
+      "PAL_PUBLIC_IP": "{machine.ip}",
       "PAL_PUBLIC_LOBBY": "{config_parameter id=\"public_lobby\"}",
       "PAL_REST_PORT": "8080",
       "PAL_MAX_PLAYERS": "{gameserver.slot_limit}",
@@ -154,7 +154,7 @@
         },
         "public_ip": {
           "name": "Public IP",
-          "info": "Optional public IPv4 address override.",
+          "info": "Optional public IPv4 address override. Leave this alone to use GSA's detected machine public IP.",
           "section": "Server",
           "type": "text",
           "content": ""
@@ -168,7 +168,7 @@
         },
         "region": {
           "name": "Server Region",
-          "info": "Optional community-list region label written into PalWorldSettings.ini.",
+          "info": "Community-list region label written into PalWorldSettings.ini.",
           "section": "Server",
           "type": "text",
           "content": "NA"
