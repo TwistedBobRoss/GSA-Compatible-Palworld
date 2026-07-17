@@ -1,5 +1,6 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+Write-Host "*** IMAGE MARKER: v14-2026-07-17-01"
 
 function Get-EnvOrDefault {
     param(
