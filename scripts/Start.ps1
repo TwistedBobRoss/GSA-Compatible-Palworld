@@ -275,7 +275,7 @@ function Install-UE4SS {
     }
 
     if ([string]::IsNullOrWhiteSpace($DownloadUrl)) {
-        throw "PAL_UE4SS_URL must be set when PAL_INSTALL_UE4SS is enabled in the clean-room image."
+        throw "PAL_UE4SS_URL must be set in the clean-room image defaults."
     }
 
     $archive = Join-Path $env:TEMP "ue4ss.zip"
@@ -428,7 +428,6 @@ $extraArgs = Get-EnvOrDefault -Name "PAL_EXTRA_ARGS" -Default ""
 $publicLobby = Get-BoolEnv -Name "PAL_PUBLIC_LOBBY" -Default $true
 $updateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default $true
 $validateOnUpdate = Get-BoolEnv -Name "PAL_VALIDATE_ON_UPDATE" -Default $false
-$installUE4SS = Get-BoolEnv -Name "PAL_INSTALL_UE4SS" -Default $false
 $bridgeTrace = Get-BoolEnv -Name "PAL_BRIDGE_TRACE" -Default $false
 $allowClientMod = Get-BoolEnv -Name "PAL_ALLOW_CLIENT_MOD" -Default $false
 $useBackupSaveData = Get-BoolEnv -Name "PAL_USE_BACKUP_SAVE_DATA" -Default $true
@@ -439,8 +438,8 @@ $invaderEnabled = Get-BoolEnv -Name "PAL_INVADER_ENABLED" -Default $true
 $fastTravelEnabled = Get-BoolEnv -Name "PAL_FAST_TRAVEL_ENABLED" -Default $true
 $startLocationSelect = Get-BoolEnv -Name "PAL_START_LOCATION_SELECT" -Default $true
 
-$ue4ssRelease = Get-EnvOrDefault -Name "PAL_UE4SS_RELEASE" -Default "manual"
-$ue4ssUrl = Get-EnvOrDefault -Name "PAL_UE4SS_URL" -Default ""
+$ue4ssRelease = Get-EnvOrDefault -Name "PAL_UE4SS_RELEASE" -Default "v3.0.1"
+$ue4ssUrl = Get-EnvOrDefault -Name "PAL_UE4SS_URL" -Default "https://github.com/UE4SS-RE/RE-UE4SS/releases/download/v3.0.1/UE4SS_v3.0.1.zip"
 $ue4ssSha256 = Get-EnvOrDefault -Name "PAL_UE4SS_SHA256" -Default ""
 
 $steamCmdPath = Join-Path $steamCmdRoot "steamcmd.exe"
@@ -523,14 +522,10 @@ $settings = @{
 
 Initialize-PalworldConfig -DefaultConfigPath $defaultConfigPath -ConfigPath $configPath -Settings $settings
 
-if ($installUE4SS) {
-    Install-UE4SS -Win64Dir $win64Dir -Release $ue4ssRelease -DownloadUrl $ue4ssUrl -Sha256 $ue4ssSha256
-    $enabledMods = Copy-BuiltInMods -SourceRoot $modsSourceRoot -TargetRoot (Join-Path $win64Dir "Mods")
-    Write-ModManifest -ModsDir (Join-Path $win64Dir "Mods") -ModNames $enabledMods
-    Write-Host ("*** Installed built-in mods: " + ($(if ($enabledMods.Count -gt 0) { $enabledMods -join ", " } else { "none" })))
-} else {
-    Write-Host "*** UE4SS installation disabled for this run"
-}
+Install-UE4SS -Win64Dir $win64Dir -Release $ue4ssRelease -DownloadUrl $ue4ssUrl -Sha256 $ue4ssSha256
+$enabledMods = Copy-BuiltInMods -SourceRoot $modsSourceRoot -TargetRoot (Join-Path $win64Dir "Mods")
+Write-ModManifest -ModsDir (Join-Path $win64Dir "Mods") -ModNames $enabledMods
+Write-Host ("*** Installed built-in mods: " + ($(if ($enabledMods.Count -gt 0) { $enabledMods -join ", " } else { "none" })))
 
 $launchArgs = @(
     "-port=$gamePort",
