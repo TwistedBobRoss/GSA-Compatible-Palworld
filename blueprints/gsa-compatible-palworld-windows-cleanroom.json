@@ -1,7 +1,7 @@
 {
   "_version": 3,
   "blueprint": {
-    "version": "1.2.5",
+    "version": "1.2.6",
     "name": "GSA-Compatible Palworld",
     "app_id": 17,
     "os": "Windows"
@@ -27,7 +27,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v17"
+      "tag": "ltsc2022-cleanroom-v18"
     },
     "automatic_ports": true,
     "envs": {
