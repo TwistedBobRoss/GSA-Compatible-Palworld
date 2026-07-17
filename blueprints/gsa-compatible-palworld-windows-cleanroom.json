@@ -4,8 +4,12 @@
   "docker": {
     "ports": {
       "game": {
-        "port": "8211",
-        "multiplier": "1"
+        "port": "7777",
+        "multiplier": "2"
+      },
+      "raw": {
+        "port": "7778",
+        "multiplier": "2"
       },
       "rcon": {
         "port": "37015",
@@ -18,7 +22,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v10"
+      "tag": "ltsc2022-cleanroom-v11"
     },
     "automatic_ports": true,
     "envs": {
@@ -40,7 +44,7 @@
       "PAL_PUBLIC_PORT": "{gameserver.game_port}",
       "PAL_PUBLIC_IP": "{config_parameter id=\"public_ip\"}",
       "PAL_PUBLIC_LOBBY": "{config_parameter id=\"public_lobby\"}",
-      "PAL_REST_PORT": "8212",
+      "PAL_REST_PORT": "8080",
       "PAL_MAX_PLAYERS": "{gameserver.slot_limit}",
       "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
       "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
@@ -96,15 +100,15 @@
       "command_control": {
         "type": "rest_local",
         "commands": {
-          "save": "{\"url\":\"http://localhost:8212/v1/api/save\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"\"}",
-          "broadcast": "{\"url\":\"http://localhost:8212/v1/api/announce\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"message\\\": \\\"{message}\\\"}\"}",
-          "kick": "{\"url\":\"http://localhost:8212/v1/api/kick\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
-          "ban": "{\"url\":\"http://localhost:8212/v1/api/ban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
-          "unban": "{\"url\":\"http://localhost:8212/v1/api/unban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\"}\"}"
+          "save": "{\"url\":\"http://localhost:8080/v1/api/save\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"\"}",
+          "broadcast": "{\"url\":\"http://localhost:8080/v1/api/announce\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"message\\\": \\\"{message}\\\"}\"}",
+          "kick": "{\"url\":\"http://localhost:8080/v1/api/kick\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
+          "ban": "{\"url\":\"http://localhost:8080/v1/api/ban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\",\\\"message\\\": \\\"{reason}\\\"}\"}",
+          "unban": "{\"url\":\"http://localhost:8080/v1/api/unban\", \"method\": \"POST\", \"header\": \"-H 'Authorization: Basic {container.rest_basic_auth_admin_user}' -H 'Content-Type: application/json'\", \"body\": \"{\\\"userid\\\": \\\"{player.id}\\\"}\"}"
         }
       },
       "monitoring": {
-        "type": "container",
+        "type": "rcon",
         "recovery_mode": true
       }
     },
@@ -115,7 +119,7 @@
           "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
           "info": "You can edit this file directly for advanced settings. The launcher refreshes the common startup, server-list, and Gameplay Settings values below on boot.",
           "disable_edit": "0",
-          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8212,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8080,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
         }
       },
       "parameters": {
