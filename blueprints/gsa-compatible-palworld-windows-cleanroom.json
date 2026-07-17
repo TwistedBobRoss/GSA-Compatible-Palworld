@@ -1,7 +1,7 @@
 {
   "_version": 3,
   "blueprint": {
-    "version": "1.2.2",
+    "version": "1.2.3",
     "name": "GSA-Compatible Palworld",
     "app_id": 17,
     "os": "Windows"
@@ -27,7 +27,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v14"
+      "tag": "ltsc2022-cleanroom-v15"
     },
     "automatic_ports": true,
     "envs": {
@@ -88,7 +88,7 @@
       "create": true,
       "type": "logs"
     },
-      "Palworld Native Logs": {
+    "Palworld Native Logs": {
       "path": "\\serverfiles\\Pal\\Saved\\Logs",
       "create": false,
       "type": "logs"
