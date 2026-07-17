@@ -35,6 +35,8 @@ Clean-room starting point for a custom GameServerApp-compatible Palworld contain
 
 This is a fresh scaffold. The files in this folder are intentionally minimal and do not reuse the previous experimental implementation.
 
+The current clean-room bootstrap now always installs the pinned UE4SS loader and stages the bundled first-party mods during startup. That behavior is intentionally not exposed as a GameServerApp toggle.
+
 ## Next Milestones
 
 1. Define the Windows launch model for the official Palworld dedicated server.
