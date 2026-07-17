@@ -1,8 +1,21 @@
 {
   "_version": 3,
-  "type": "custom",
+  "blueprint": {
+    "version": "1.2.0",
+    "name": "GSA-Compatible Palworld",
+    "app_id": 17,
+    "os": "Windows"
+  },
   "docker": {
     "ports": {
+      "query": {
+        "port": "27015",
+        "multiplier": "1"
+      },
+      "rcon": {
+        "port": "37015",
+        "multiplier": "1"
+      },
       "game": {
         "port": "7777",
         "multiplier": "2"
@@ -10,25 +23,18 @@
       "raw": {
         "port": "7778",
         "multiplier": "2"
-      },
-      "rcon": {
-        "port": "37015",
-        "multiplier": "1"
-      },
-      "query": {
-        "port": "27015",
-        "multiplier": "1"
       }
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v11"
+      "tag": "ltsc2022-cleanroom-v12"
     },
     "automatic_ports": true,
     "envs": {
+      "PAL_GSA_STEAM_MODE": "true",
       "PAL_DATA_DIR": "C:/serverfiles",
       "PAL_STEAMCMD_DIR": "C:/serverfiles/_steamcmd",
-      "PAL_SERVER_ROOT": "C:/serverfiles/PalServer",
+      "PAL_SERVER_ROOT": "C:/serverfiles",
       "PAL_LOG_DIR": "C:/serverfiles/Logs",
       "PAL_BRIDGE_DIR": "C:/serverfiles/TKGBridge",
       "PAL_BRIDGE_TRACE": "{config_parameter id=\"bridge_trace\"}",
@@ -82,8 +88,8 @@
       "create": true,
       "type": "logs"
     },
-    "Palworld Native Logs": {
-      "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Logs",
+      "Palworld Native Logs": {
+      "path": "\\serverfiles\\Pal\\Saved\\Logs",
       "create": false,
       "type": "logs"
     }
@@ -91,10 +97,10 @@
   "game": {
     "server": {
       "wipe": [
-        "\\serverfiles\\PalServer\\Pal\\Saved\\SaveGames"
+        "\\serverfiles\\Pal\\Saved\\SaveGames"
       ],
       "backup": {
-        "Palworld Saved": "\\serverfiles\\PalServer\\Pal\\Saved",
+        "Palworld Saved": "\\serverfiles\\Pal\\Saved",
         "TKGBridge State": "\\serverfiles\\TKGBridge"
       },
       "command_control": {
@@ -112,11 +118,20 @@
         "recovery_mode": true
       }
     },
-    "type": "custom",
+    "type": "gsa-steam",
+    "steam": {
+      "client_id": "1623730",
+      "server_id": "2394010",
+      "requires_steam_auth": false,
+      "launch_parameters": "-NoLogo -ExecutionPolicy Bypass -File C:\\Start.ps1",
+      "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "executable_output_log": "C:\\serverfiles\\Logs",
+      "user": "containeruser"
+    },
     "config": {
       "files": {
         "PalWorldSettings.ini": {
-          "path": "\\serverfiles\\PalServer\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+          "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
           "info": "You can edit this file directly for advanced settings. The launcher refreshes the common startup, server-list, and Gameplay Settings values below on boot.",
           "disable_edit": "0",
           "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8080,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
@@ -146,9 +161,9 @@
         },
         "public_lobby": {
           "name": "Community/Public Lobby",
-          "info": "Adds -publiclobby so the server can appear in the community server list.",
+          "info": "Use 1 to enable or 0 to disable -publiclobby so the server can appear in the community server list.",
           "section": "Server",
-          "type": "boolean",
+          "type": "text",
           "content": "1"
         },
         "region": {
@@ -159,66 +174,66 @@
           "content": ""
         },
         "update_on_start": {
-          "name": "Update On Start",
-          "info": "Runs SteamCMD update when the container starts.",
+          "name": "Fallback Update On Start",
+          "info": "Use 1 to enable or 0 to disable. Only used by the wrapper if GSA's Steam-managed install is missing or you want an extra in-container update pass.",
           "section": "Install",
-          "type": "boolean",
-          "content": "1"
+          "type": "text",
+          "content": "0"
         },
         "validate_on_update": {
           "name": "Validate On Update",
-          "info": "Adds Steam validation during update. Slower but useful for repair.",
+          "info": "Use 1 to enable or 0 to disable Steam validation during fallback update. Slower but useful for repair.",
           "section": "Install",
-          "type": "boolean",
+          "type": "text",
           "content": "0"
         },
         "bridge_trace": {
           "name": "TKG Trace Mode",
-          "info": "Writes deeper TKGBridge hook and player-state diagnostics to TKGBridge\\trace.log.",
+          "info": "Use 1 to enable or 0 to disable deeper TKGBridge hook and player-state diagnostics in TKGBridge\\trace.log.",
           "section": "Advanced",
-          "type": "boolean",
+          "type": "text",
           "content": "0"
         },
         "allow_client_mod": {
           "name": "Allow Modded Clients",
-          "info": "Permits players with client mods to connect.",
+          "info": "Use 1 to allow modded clients or 0 to keep them blocked.",
           "section": "Access",
-          "type": "boolean",
+          "type": "text",
           "content": "0"
         },
         "crossplay_platforms": {
           "name": "Allowed Platforms",
-          "info": "Controls which client platforms may join.",
+          "info": "Enter the raw Palworld tuple, for example (Steam,Xbox,PS5,Mac), (Steam), or (Steam,Xbox).",
           "section": "Access",
-          "type": "array",
-          "dropdown": "{\"All Platforms\":\"(Steam,Xbox,PS5,Mac)\",\"Steam Only\":\"(Steam)\",\"Steam + Xbox\":\"(Steam,Xbox)\",\"Steam + Xbox + PS5\":\"(Steam,Xbox,PS5)\"}"
+          "type": "text",
+          "content": "(Steam,Xbox,PS5,Mac)"
         },
         "pvp_enabled": {
           "name": "Enable PvP",
-          "info": "Turns on Palworld's PvP-related damage flags together.",
+          "info": "Use 1 to enable or 0 to disable Palworld's PvP-related damage flags together.",
           "section": "Gameplay Settings",
-          "type": "boolean",
+          "type": "text",
           "content": "0"
         },
         "death_penalty": {
           "name": "Death Penalty",
-          "info": "Controls what players drop on death.",
+          "info": "Valid values: All, ItemAndEquipment, Item, None.",
           "section": "Gameplay Settings",
-          "type": "array",
-          "dropdown": "{\"All Items + Equipment + Team Pals\":\"All\",\"Items + Equipment\":\"ItemAndEquipment\",\"Items Only\":\"Item\",\"None\":\"None\"}"
+          "type": "text",
+          "content": "All"
         },
         "invader_enabled": {
           "name": "Enable Base Raids",
-          "info": "Allows NPC raid events against player bases.",
+          "info": "Use 1 to enable or 0 to disable NPC raid events against player bases.",
           "section": "Gameplay Settings",
-          "type": "boolean",
+          "type": "text",
           "content": "1"
         },
         "fast_travel_enabled": {
           "name": "Enable Fast Travel",
-          "info": "Controls whether players can fast travel.",
+          "info": "Use 1 to enable or 0 to disable fast travel.",
           "section": "Gameplay Settings",
-          "type": "boolean",
+          "type": "text",
           "content": "1"
         },
         "exp_rate": {
@@ -265,7 +280,7 @@
         },
         "extra_args": {
           "name": "Extra Launch Arguments",
-          "info": "Additional command-line arguments appended to the server launch.",
+          "info": "Additional command-line arguments appended by the wrapper before the Palworld server is launched.",
           "section": "Advanced",
           "type": "text",
           "content": ""
