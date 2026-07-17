@@ -8,6 +8,7 @@ on:
     paths:
       - "docker/**"
       - "scripts/**"
+      - "src/**"
       - "mods/**"
       - "blueprints/**"
       - "docs/**"
@@ -26,7 +27,7 @@ jobs:
     timeout-minutes: 60
     env:
       WINDOWS_VERSION: server-2022
-      IMAGE_TAG: ltsc2022-cleanroom-v17
+      IMAGE_TAG: ltsc2022-cleanroom-v18
 
     steps:
       - name: Checkout
