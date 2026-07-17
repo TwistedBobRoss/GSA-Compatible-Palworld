@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-Write-Host "*** IMAGE MARKER: v16-2026-07-17-01"
+Write-Host "*** IMAGE MARKER: v17-2026-07-17-01"
 
 function Get-EnvOrDefault {
     param(
@@ -423,6 +423,18 @@ function Initialize-PalworldConfig {
     [IO.File]::WriteAllText($ConfigPath, $content, [Text.UTF8Encoding]::new($false))
 }
 
+function Set-OptionalPalSetting {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Settings,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [AllowEmptyString()][string]$Value
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Value)) {
+        $Settings[$Name] = '"' + (Escape-PalString $Value) + '"'
+    }
+}
+
 $dataDir = Get-EnvOrDefault -Name "PAL_DATA_DIR" -Default "C:\serverfiles"
 $steamCmdRoot = Get-EnvOrDefault -Name "PAL_STEAMCMD_DIR" -Default (Join-Path $dataDir "_steamcmd")
 $logsDir = Get-EnvOrDefault -Name "PAL_LOG_DIR" -Default (Join-Path $dataDir "Logs")
@@ -525,8 +537,6 @@ $settings = @{
     "ServerPassword" = '"' + (Escape-PalString $serverPassword) + '"'
     "AdminPassword" = '"' + (Escape-PalString $adminPassword) + '"'
     "ServerPlayerMaxNum" = $slotLimit
-    "Region" = '"' + (Escape-PalString $region) + '"'
-    "PublicIP" = '"' + (Escape-PalString $publicIp) + '"'
     "PublicPort" = $publicPort
     "QueryPort" = $queryPort
     "RCONEnabled" = "True"
@@ -550,6 +560,9 @@ $settings = @{
     "NightTimeSpeedRate" = $nightTimeSpeedRate
     "PalEggDefaultHatchingTime" = $eggHatchingTime
 }
+
+Set-OptionalPalSetting -Settings $settings -Name "Region" -Value $region
+Set-OptionalPalSetting -Settings $settings -Name "PublicIP" -Value $publicIp
 
 Initialize-PalworldConfig -DefaultConfigPath $defaultConfigPath -ConfigPath $configPath -Settings $settings
 
