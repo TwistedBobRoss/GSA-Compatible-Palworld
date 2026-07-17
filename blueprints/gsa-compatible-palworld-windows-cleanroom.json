@@ -14,7 +14,7 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v6"
+      "tag": "ltsc2022-cleanroom-v7"
     },
     "automatic_ports": true,
     "envs": {
@@ -38,10 +38,6 @@
       "PAL_MAX_PLAYERS": "{gameserver.slot_limit}",
       "PAL_UPDATE_ON_START": "{config_parameter id=\"update_on_start\"}",
       "PAL_VALIDATE_ON_UPDATE": "{config_parameter id=\"validate_on_update\"}",
-      "PAL_INSTALL_UE4SS": "{config_parameter id=\"install_ue_ss\"}",
-      "PAL_UE4SS_RELEASE": "{config_parameter id=\"ue_ss_release\"}",
-      "PAL_UE4SS_URL": "{config_parameter id=\"ue_ss_url\"}",
-      "PAL_UE4SS_SHA256": "{config_parameter id=\"ue_ss_sha\"}",
       "PAL_ALLOW_CLIENT_MOD": "{config_parameter id=\"allow_client_mod\"}",
       "PAL_USE_BACKUP_SAVE_DATA": "{config_parameter id=\"use_backup_save_data\"}",
       "PAL_SHOW_JOIN_LEAVE": "{config_parameter id=\"show_join_leave\"}",
@@ -160,34 +156,6 @@
           "section": "Server",
           "type": "boolean",
           "content": "1"
-        },
-        "install_ue_ss": {
-          "name": "Install UE4SS",
-          "info": "Installs the UE4SS loader and stages built-in first-party mods.",
-          "section": "Install",
-          "type": "boolean",
-          "content": "1"
-        },
-        "ue_ss_release": {
-          "name": "UE4SS Release Label",
-          "info": "Reference label for the downloaded UE4SS package.",
-          "section": "Install",
-          "type": "text",
-          "content": "manual"
-        },
-        "ue_ss_url": {
-          "name": "UE4SS Download URL",
-          "info": "Direct zip URL for the approved UE4SS package.",
-          "section": "Install",
-          "type": "text",
-          "content": ""
-        },
-        "ue_ss_sha": {
-          "name": "UE4SS SHA256",
-          "info": "Optional checksum for the UE4SS zip.",
-          "section": "Install",
-          "type": "text",
-          "content": ""
         },
         "bridge_trace": {
           "name": "Bridge Trace Mode",
