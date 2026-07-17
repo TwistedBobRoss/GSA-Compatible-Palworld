@@ -1,7 +1,7 @@
 {
   "_version": 3,
   "blueprint": {
-    "version": "1.2.3",
+    "version": "1.2.4",
     "name": "GSA-Compatible Palworld",
     "app_id": 17,
     "os": "Windows"
@@ -27,16 +27,16 @@
     },
     "image": {
       "name": "ghcr.io/twistedbobross/gsa-compatible-palworld",
-      "tag": "ltsc2022-cleanroom-v15"
+      "tag": "ltsc2022-cleanroom-v16"
     },
     "automatic_ports": true,
     "envs": {
       "PAL_GSA_STEAM_MODE": "true",
-      "PAL_DATA_DIR": "C:/serverfiles",
-      "PAL_STEAMCMD_DIR": "C:/serverfiles/_steamcmd",
-      "PAL_SERVER_ROOT": "C:/serverfiles",
-      "PAL_LOG_DIR": "C:/serverfiles/Logs",
-      "PAL_BRIDGE_DIR": "C:/serverfiles/TKGBridge",
+      "PAL_DATA_DIR": "C:/Users/ContainerUser/serverfiles",
+      "PAL_STEAMCMD_DIR": "C:/Users/ContainerUser/serverfiles/_steamcmd",
+      "PAL_SERVER_ROOT": "C:/Users/ContainerUser/serverfiles",
+      "PAL_LOG_DIR": "C:/Users/ContainerUser/serverfiles/logs",
+      "PAL_BRIDGE_DIR": "C:/Users/ContainerUser/serverfiles/TKGBridge",
       "PAL_BRIDGE_TRACE": "{config_parameter id=\"bridge_trace\"}",
       "PAL_MODS_DIR": "C:/image-mods",
       "PAL_SERVER_NAME": "{gameserver.list_name}",
@@ -69,27 +69,27 @@
       "PAL_EXTRA_ARGS": "{config_parameter id=\"extra_args\"}"
     },
     "mounts": {
-      "{host.container_root}/serverfiles": "c:/serverfiles"
+      "{host.container_root}\\serverfiles": "C:\\Users\\ContainerUser\\serverfiles"
     }
   },
   "dir": {
-    "Serverfiles": {
-      "path": "\\serverfiles",
+    "Saves": {
+      "path": "/serverfiles/Pal/Saved/SaveGames",
       "create": false,
-      "type": "normal"
+      "type": "saves"
     },
-    "Compatibility Logs": {
-      "path": "\\serverfiles\\Logs",
+    "Logs": {
+      "path": "/serverfiles/logs",
       "create": true,
       "type": "logs"
     },
     "Bridge Logs": {
-      "path": "\\serverfiles\\TKGBridge",
+      "path": "/serverfiles/TKGBridge",
       "create": true,
       "type": "logs"
     },
     "Palworld Native Logs": {
-      "path": "\\serverfiles\\Pal\\Saved\\Logs",
+      "path": "/serverfiles/Pal/Saved/Logs",
       "create": false,
       "type": "logs"
     }
@@ -97,11 +97,11 @@
   "game": {
     "server": {
       "wipe": [
-        "\\serverfiles\\Pal\\Saved\\SaveGames"
+        "/serverfiles/Pal/Saved/SaveGames"
       ],
       "backup": {
-        "Palworld Saved": "\\serverfiles\\Pal\\Saved",
-        "TKGBridge State": "\\serverfiles\\TKGBridge"
+        "Palworld Saved": "/serverfiles/Pal/Saved",
+        "TKGBridge State": "/serverfiles/TKGBridge"
       },
       "command_control": {
         "type": "rest_local",
@@ -125,16 +125,16 @@
       "requires_steam_auth": false,
       "launch_parameters": "-NoLogo -ExecutionPolicy Bypass -File C:\\Start.ps1",
       "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-      "executable_output_log": "C:\\serverfiles\\Logs",
+      "executable_output_log": "C:\\Users\\ContainerUser\\serverfiles\\logs",
       "user": "containeruser"
     },
     "config": {
       "files": {
         "PalWorldSettings.ini": {
-          "path": "\\serverfiles\\Pal\\Saved\\Config\\WindowsServer\\PalWorldSettings.ini",
+          "path": "/serverfiles/Pal/Saved/Config/WindowsServer/PalWorldSettings.ini",
           "info": "You can edit this file directly for advanced settings. The launcher refreshes the common startup, server-list, and Gameplay Settings values below on boot.",
           "disable_edit": "0",
-          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8080,LogFormatType=Text,bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"})"
+          "content": "[/Script/Pal.PalGameWorldSettings]\r\nOptionSettings=(ServerName=\"{gameserver.list_name}\",ServerDescription=\"{config_parameter id=\"server_description\"}\",ServerPassword=\"{config_parameter id=\"server_password\"}\",AdminPassword=\"{gameserver.rcon_password}\",ServerPlayerMaxNum={gameserver.slot_limit},Region=\"{config_parameter id=\"region\"}\",PublicIP=\"{config_parameter id=\"public_ip\"}\",PublicPort={gameserver.game_port},QueryPort={gameserver.query_port},RCONEnabled=True,RCONPort={gameserver.rcon_port},RESTAPIEnabled=True,RESTAPIPort=8080,LogFormatType=\"Text\",bAllowClientMod={config_parameter id=\"allow_client_mod\"},CrossplayPlatforms={config_parameter id=\"crossplay_platforms\"},bIsPvP={config_parameter id=\"pvp_enabled\"},bEnablePlayerToPlayerDamage={config_parameter id=\"pvp_enabled\"},bEnableDefenseOtherGuildPlayer={config_parameter id=\"pvp_enabled\"},DeathPenalty={config_parameter id=\"death_penalty\"},bEnableInvaderEnemy={config_parameter id=\"invader_enabled\"},bEnableFastTravel={config_parameter id=\"fast_travel_enabled\"},PalEggDefaultHatchingTime={config_parameter id=\"egg_hatching_time\"},DayTimeSpeedRate={config_parameter id=\"day_time_speed_rate\"},NightTimeSpeedRate={config_parameter id=\"night_time_speed_rate\"},ExpRate={config_parameter id=\"exp_rate\"},PalCaptureRate={config_parameter id=\"capture_rate\"},PalSpawnNumRate={config_parameter id=\"spawn_rate\"},bUseAuth=True)"
         }
       },
       "parameters": {
@@ -171,7 +171,7 @@
           "info": "Optional community-list region label written into PalWorldSettings.ini.",
           "section": "Server",
           "type": "text",
-          "content": ""
+          "content": "NA"
         },
         "update_on_start": {
           "name": "Fallback Update On Start",
@@ -206,7 +206,7 @@
           "info": "Enter the raw Palworld tuple, for example (Steam,Xbox,PS5,Mac), (Steam), or (Steam,Xbox).",
           "section": "Access",
           "type": "text",
-          "content": "(Steam,Xbox,PS5,Mac)"
+          "content": "(\"Steam\",\"Xbox\",\"PS5\",\"Mac\")"
         },
         "pvp_enabled": {
           "name": "Enable PvP",
