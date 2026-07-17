@@ -3,7 +3,12 @@ local MOD_VERSION = "0.3.0"
 
 local bridgeRoot = os.getenv("PAL_BRIDGE_DIR") or "C:\\serverfiles\\TKGBridge"
 local logsRoot = os.getenv("PAL_LOG_DIR") or "C:\\serverfiles\\Logs"
-local traceEnabled = string.lower(tostring(os.getenv("PAL_BRIDGE_TRACE") or "false")) == "true"
+local traceRaw = string.lower(tostring(os.getenv("PAL_BRIDGE_TRACE") or "false"))
+local traceEnabled =
+    traceRaw == "1" or
+    traceRaw == "true" or
+    traceRaw == "yes" or
+    traceRaw == "on"
 local eventsLog = bridgeRoot .. "\\events.log"
 local auditLog = bridgeRoot .. "\\audit.log"
 local identityLog = bridgeRoot .. "\\identities.log"
