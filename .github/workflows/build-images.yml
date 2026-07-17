@@ -25,7 +25,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 60
     env:
-      WINDOWS_VERSION: ltsc2022
+      WINDOWS_VERSION: server-2022
       IMAGE_TAG: ltsc2022-cleanroom-v17
 
     steps:
