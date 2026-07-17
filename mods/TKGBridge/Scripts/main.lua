@@ -17,6 +17,10 @@ local traceLog = bridgeRoot .. "\\trace.log"
 
 local knownPlayers = {}
 local chatHookRegistered = false
+local chatHookAttempts = 0
+local chatHookPreId = nil
+local chatHookPostId = nil
+local lastChatHookError = ""
 
 local function oneLine(value)
     value = tostring(value or "")
@@ -379,11 +383,12 @@ local function diffPlayers()
     knownPlayers = current
 end
 
-local function registerChatHook()
+local function registerChatHook(reason)
     if chatHookRegistered then
         return
     end
 
+    chatHookAttempts = chatHookAttempts + 1
     local ok, preId, postId = pcall(function()
         return RegisterHook("/Script/Pal.PalPlayerState:EnterChat_Receive", function(context, chatParameter)
             local success, err = pcall(function()
@@ -412,11 +417,28 @@ local function registerChatHook()
         end)
     end)
 
-    if ok then
+    if ok and (preId ~= nil or postId ~= nil) then
         chatHookRegistered = true
-        emitAudit("registered_chat_hook pre=" .. oneLine(preId) .. " post=" .. oneLine(postId))
+        chatHookPreId = preId
+        chatHookPostId = postId
+        emitAudit(
+            "registered_chat_hook reason=" .. oneLine(reason or "unknown") ..
+            " attempt=" .. oneLine(chatHookAttempts) ..
+            " pre=" .. oneLine(preId) ..
+            " post=" .. oneLine(postId))
     else
-        emitAudit("failed_chat_hook_registration=" .. oneLine(preId))
+        local failure = oneLine(preId)
+        if failure == "" then
+            failure = "empty_hook_result"
+        end
+
+        if failure ~= lastChatHookError or (chatHookAttempts % 5) == 0 then
+            emitAudit(
+                "failed_chat_hook_registration reason=" .. oneLine(reason or "unknown") ..
+                " attempt=" .. oneLine(chatHookAttempts) ..
+                " error=" .. failure)
+            lastChatHookError = failure
+        end
     end
 end
 
@@ -424,12 +446,13 @@ local function installHooks()
     emitAudit("bridge directories: " .. bridgeRoot)
     emitAudit("compatibility log: " .. compatibilityLog)
 
-    registerChatHook()
+    registerChatHook("startup")
 
     local okNotify, errNotify = pcall(function()
         NotifyOnNewObject("/Script/Pal.PalPlayerState", function(newObject)
             local ok, err = pcall(function()
                 if newObject and newObject:IsValid() then
+                    registerChatHook("new_object")
                     local identity = playerStateIdentity(newObject)
                     dumpPlayerStateProperties(newObject, "new_object")
                     recordIdentity(identity.name, identity.userId, identity.playerId, "new_object")
@@ -451,6 +474,7 @@ local function installHooks()
 
     local okLoop, errLoop = pcall(function()
         LoopAsync(3000, function()
+            registerChatHook("loop")
             local ok, err = pcall(diffPlayers)
             if not ok then
                 emitAudit("player_diff_error=" .. oneLine(err))
