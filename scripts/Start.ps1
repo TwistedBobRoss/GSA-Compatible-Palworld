@@ -398,10 +398,18 @@ $region = Get-EnvOrDefault -Name "PAL_REGION" -Default ""
 $publicIp = Get-EnvOrDefault -Name "PAL_PUBLIC_IP" -Default ""
 $gamePort = Get-EnvOrDefault -Name "PAL_GAME_PORT" -Default "8211"
 $queryPort = Get-EnvOrDefault -Name "PAL_QUERY_PORT" -Default "27015"
+$rconPort = Get-EnvOrDefault -Name "PAL_RCON_PORT" -Default "37015"
 $restPort = Get-EnvOrDefault -Name "PAL_REST_PORT" -Default "8212"
 $publicPort = Get-EnvOrDefault -Name "PAL_PUBLIC_PORT" -Default $gamePort
 $slotLimit = Get-EnvOrDefault -Name "PAL_MAX_PLAYERS" -Default "32"
 $crossplayPlatforms = Get-EnvOrDefault -Name "PAL_CROSSPLAY_PLATFORMS" -Default "(Steam,Xbox,PS5,Mac)"
+$deathPenalty = Get-EnvOrDefault -Name "PAL_DEATH_PENALTY" -Default "All"
+$expRate = Get-EnvOrDefault -Name "PAL_EXP_RATE" -Default "1.0"
+$captureRate = Get-EnvOrDefault -Name "PAL_CAPTURE_RATE" -Default "1.0"
+$spawnRate = Get-EnvOrDefault -Name "PAL_SPAWN_RATE" -Default "1.0"
+$dayTimeSpeedRate = Get-EnvOrDefault -Name "PAL_DAY_TIME_SPEED_RATE" -Default "1.0"
+$nightTimeSpeedRate = Get-EnvOrDefault -Name "PAL_NIGHT_TIME_SPEED_RATE" -Default "1.0"
+$eggHatchingTime = Get-EnvOrDefault -Name "PAL_EGG_HATCHING_TIME" -Default "72.0"
 $extraArgs = Get-EnvOrDefault -Name "PAL_EXTRA_ARGS" -Default ""
 
 $publicLobby = Get-BoolEnv -Name "PAL_PUBLIC_LOBBY" -Default $true
@@ -409,6 +417,9 @@ $updateOnStart = Get-BoolEnv -Name "PAL_UPDATE_ON_START" -Default $true
 $validateOnUpdate = Get-BoolEnv -Name "PAL_VALIDATE_ON_UPDATE" -Default $false
 $bridgeTrace = Get-BoolEnv -Name "PAL_BRIDGE_TRACE" -Default $false
 $allowClientMod = Get-BoolEnv -Name "PAL_ALLOW_CLIENT_MOD" -Default $false
+$pvpEnabled = Get-BoolEnv -Name "PAL_PVP_ENABLED" -Default $false
+$invaderEnabled = Get-BoolEnv -Name "PAL_INVADER_ENABLED" -Default $true
+$fastTravelEnabled = Get-BoolEnv -Name "PAL_FAST_TRAVEL_ENABLED" -Default $true
 
 $ue4ssRelease = Get-EnvOrDefault -Name "PAL_UE4SS_RELEASE" -Default "v3.0.1"
 $ue4ssUrl = Get-EnvOrDefault -Name "PAL_UE4SS_URL" -Default "https://github.com/UE4SS-RE/RE-UE4SS/releases/download/v3.0.1/UE4SS_v3.0.1.zip"
@@ -454,12 +465,25 @@ $settings = @{
     "PublicIP" = '"' + (Escape-PalString $publicIp) + '"'
     "PublicPort" = $publicPort
     "QueryPort" = $queryPort
-    "RCONEnabled" = "False"
+    "RCONEnabled" = "True"
+    "RCONPort" = $rconPort
     "RESTAPIEnabled" = "True"
     "RESTAPIPort" = $restPort
     "LogFormatType" = "Text"
     "bAllowClientMod" = ConvertTo-PalBoolean $allowClientMod
     "CrossplayPlatforms" = $crossplayPlatforms
+    "bIsPvP" = ConvertTo-PalBoolean $pvpEnabled
+    "bEnablePlayerToPlayerDamage" = ConvertTo-PalBoolean $pvpEnabled
+    "bEnableDefenseOtherGuildPlayer" = ConvertTo-PalBoolean $pvpEnabled
+    "DeathPenalty" = $deathPenalty
+    "bEnableInvaderEnemy" = ConvertTo-PalBoolean $invaderEnabled
+    "bEnableFastTravel" = ConvertTo-PalBoolean $fastTravelEnabled
+    "ExpRate" = $expRate
+    "PalCaptureRate" = $captureRate
+    "PalSpawnNumRate" = $spawnRate
+    "DayTimeSpeedRate" = $dayTimeSpeedRate
+    "NightTimeSpeedRate" = $nightTimeSpeedRate
+    "PalEggDefaultHatchingTime" = $eggHatchingTime
 }
 
 Initialize-PalworldConfig -DefaultConfigPath $defaultConfigPath -ConfigPath $configPath -Settings $settings
@@ -471,7 +495,12 @@ Write-Host ("*** Installed built-in mods: " + ($(if ($enabledMods.Count -gt 0) {
 
 $launchArgs = @(
     "-port=$gamePort",
+    "-players=$slotLimit",
     "-queryport=$queryPort",
+    "-publicport=$publicPort",
+    "-adminpassword=$adminPassword",
+    "-RCONPort=$rconPort",
+    "-logformat=text",
     "-useperfthreads",
     "-NoAsyncLoadingThread",
     "-UseMultithreadForDS"
@@ -479,6 +508,10 @@ $launchArgs = @(
 
 if ($publicLobby) {
     $launchArgs += "-publiclobby"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($publicIp)) {
+    $launchArgs += "-publicip=$publicIp"
 }
 
 if (-not [string]::IsNullOrWhiteSpace($extraArgs)) {
