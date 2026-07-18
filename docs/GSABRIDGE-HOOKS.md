@@ -67,19 +67,20 @@ The current `main.lua` now uses a hybrid hook strategy:
 
 - direct `RegisterHook` for Palworld chat
 - `NotifyOnNewObject` for player-state discovery
-- `LoopAsync` snapshot diffing for join and leave detection
+- delayed-loop snapshot diffing for join and leave detection
 
 ## Current Hook Strategy
 
 ### Chat
 
-The bridge attempts to register:
+The bridge now attempts chat hooks in this order:
 
 ```text
+/Script/Pal.PalGameStateInGame:BroadcastChatMessage
 /Script/Pal.PalPlayerState:EnterChat_Receive
 ```
 
-That is currently the strongest known chat hook candidate in our Palworld work.
+`BroadcastChatMessage` is the current primary target. `EnterChat_Receive` is kept as a legacy fallback for older behavior or unexpected server builds.
 
 ### Join and leave
 
