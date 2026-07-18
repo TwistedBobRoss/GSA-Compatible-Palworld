@@ -1,5 +1,5 @@
 local MOD_NAME = "TKGBridge"
-local MOD_VERSION = "0.3.0"
+local MOD_VERSION = "0.3.1"
 
 local bridgeRoot = os.getenv("PAL_BRIDGE_DIR") or "C:\\serverfiles\\TKGBridge"
 local logsRoot = os.getenv("PAL_LOG_DIR") or "C:\\serverfiles\\Logs"
@@ -20,6 +20,7 @@ local chatHookRegistered = false
 local chatHookAttempts = 0
 local chatHookPreId = nil
 local chatHookPostId = nil
+local chatHookTarget = nil
 local lastChatHookError = ""
 
 local function oneLine(value)
@@ -365,6 +366,100 @@ local function snapshotPlayers()
     return snapshot
 end
 
+local function lookupIdentity(snapshot, playerId, name)
+    local normalizedPlayerId = normalizeId(playerId)
+    if normalizedPlayerId ~= "" then
+        for _, identity in pairs(snapshot or {}) do
+            if normalizeId(identity.playerId) == normalizedPlayerId then
+                return identity
+            end
+        end
+    end
+
+    local normalizedName = string.lower(oneLine(name))
+    if normalizedName ~= "" then
+        for _, identity in pairs(snapshot or {}) do
+            if string.lower(oneLine(identity.name)) == normalizedName then
+                return identity
+            end
+        end
+    end
+
+    return nil
+end
+
+local function resolveChatIdentity(sender, playerId)
+    local identity = lookupIdentity(knownPlayers, playerId, sender)
+    if identity then
+        return identity
+    end
+
+    local current = snapshotPlayers()
+    identity = lookupIdentity(current, playerId, sender)
+    if identity then
+        knownPlayers = current
+        return identity
+    end
+
+    return nil
+end
+
+local function handleLegacyPlayerStateChat(context, chatParameter)
+    local message = chatParameter:get()
+    local sender = safeToString(message.Sender)
+    local text = safeToString(message.Message)
+    local playerId = guidToString(message.SenderPlayerUId)
+    local userId = "unknown"
+
+    if context and context:IsValid() then
+        local identity = playerStateIdentity(context)
+        dumpPlayerStateProperties(context, "chat_legacy")
+        sender = firstNonEmpty({ sender, identity.name, "unknown" })
+        userId = identity.userId
+        if playerId == "" then
+            playerId = identity.playerId
+        end
+    end
+
+    emitChat(sender, userId, playerId, text)
+end
+
+local function handleBroadcastChat(context, chatParameter)
+    local chatMessage = chatParameter:get()
+    local sender = safeToString(chatMessage.Sender)
+    local text = safeToString(chatMessage.Message)
+    local playerId = guidToString(chatMessage.SenderPlayerUId)
+    local userId = "unknown"
+
+    local identity = resolveChatIdentity(sender, playerId)
+    if identity then
+        sender = firstNonEmpty({ sender, identity.name, "unknown" })
+        userId = identity.userId
+        if playerId == "" then
+            playerId = identity.playerId
+        end
+    else
+        sender = firstNonEmpty({ sender, "unknown" })
+    end
+
+    if context and context:IsValid() then
+        emitTrace("chat_context=" .. safeToString(context.GetFullName and context:GetFullName() or tostring(context)))
+    end
+
+    emitChat(sender, userId, playerId, text)
+end
+
+local chatHookCandidates = {
+    {
+        name = "/Script/Pal.PalGameStateInGame:BroadcastChatMessage",
+        handler = handleBroadcastChat
+    },
+    {
+        name = "/Script/Pal.PalPlayerState:EnterChat_Receive",
+        handler = handleLegacyPlayerStateChat
+    }
+}
+
 local function diffPlayers()
     local current = snapshotPlayers()
 
@@ -389,56 +484,65 @@ local function registerChatHook(reason)
     end
 
     chatHookAttempts = chatHookAttempts + 1
-    local ok, preId, postId = pcall(function()
-        return RegisterHook("/Script/Pal.PalPlayerState:EnterChat_Receive", function(context, chatParameter)
-            local success, err = pcall(function()
-                local message = chatParameter:get()
-                local sender = safeToString(message.Sender)
-                local text = safeToString(message.Message)
-                local playerId = guidToString(message.SenderPlayerUId)
-                local userId = "unknown"
+    emitTrace(
+        "chat_hook_retry reason=" .. oneLine(reason or "unknown") ..
+        " attempt=" .. oneLine(chatHookAttempts))
 
-                if context and context:IsValid() then
-                    local identity = playerStateIdentity(context)
-                    dumpPlayerStateProperties(context, "chat")
-                    sender = firstNonEmpty({ sender, identity.name, "unknown" })
-                    userId = identity.userId
-                    if playerId == "" then
-                        playerId = identity.playerId
-                    end
+    local failures = {}
+
+    for _, candidate in ipairs(chatHookCandidates) do
+        local ok, preId, postId = pcall(function()
+            return RegisterHook(candidate.name, function(context, chatParameter)
+                local success, err = pcall(function()
+                    candidate.handler(context, chatParameter)
+                end)
+
+                if not success then
+                    emitAudit(
+                        "chat_hook_error target=" .. oneLine(candidate.name) ..
+                        " error=" .. oneLine(err))
                 end
-
-                emitChat(sender, userId, playerId, text)
             end)
-
-            if not success then
-                emitAudit("chat_hook_error=" .. oneLine(err))
-            end
         end)
-    end)
 
-    if ok and (preId ~= nil or postId ~= nil) then
-        chatHookRegistered = true
-        chatHookPreId = preId
-        chatHookPostId = postId
-        emitAudit(
-            "registered_chat_hook reason=" .. oneLine(reason or "unknown") ..
-            " attempt=" .. oneLine(chatHookAttempts) ..
-            " pre=" .. oneLine(preId) ..
-            " post=" .. oneLine(postId))
-    else
+        if ok and (preId ~= nil or postId ~= nil) then
+            chatHookRegistered = true
+            chatHookPreId = preId
+            chatHookPostId = postId
+            chatHookTarget = candidate.name
+            emitAudit(
+                "registered_chat_hook reason=" .. oneLine(reason or "unknown") ..
+                " target=" .. oneLine(candidate.name) ..
+                " attempt=" .. oneLine(chatHookAttempts) ..
+                " pre=" .. oneLine(preId) ..
+                " post=" .. oneLine(postId))
+            emitEvent("chat_hook_registered", {
+                status = "ready",
+                target = candidate.name,
+                reason = reason or "unknown"
+            })
+            return
+        end
+
         local failure = oneLine(preId)
         if failure == "" then
             failure = "empty_hook_result"
         end
 
-        if failure ~= lastChatHookError or (chatHookAttempts % 5) == 0 then
-            emitAudit(
-                "failed_chat_hook_registration reason=" .. oneLine(reason or "unknown") ..
-                " attempt=" .. oneLine(chatHookAttempts) ..
-                " error=" .. failure)
-            lastChatHookError = failure
-        end
+        failures[#failures + 1] = candidate.name .. " => " .. failure
+    end
+
+    local failureSummary = table.concat(failures, " | ")
+    if failureSummary == "" then
+        failureSummary = "no_candidates_attempted"
+    end
+
+    if failureSummary ~= lastChatHookError or (chatHookAttempts % 5) == 0 then
+        emitAudit(
+            "failed_chat_hook_registration reason=" .. oneLine(reason or "unknown") ..
+            " attempt=" .. oneLine(chatHookAttempts) ..
+            " error=" .. failureSummary)
+        lastChatHookError = failureSummary
     end
 end
 
@@ -472,7 +576,18 @@ local function installHooks()
         emitAudit("failed NotifyOnNewObject registration=" .. oneLine(errNotify))
     end
 
-    local okLoop, errLoop = pcall(function()
+    local okLoop, loopModeOrError = pcall(function()
+        if type(LoopInGameThreadWithDelay) == "function" then
+            LoopInGameThreadWithDelay(3000, function()
+                registerChatHook("loop")
+                local ok, err = pcall(diffPlayers)
+                if not ok then
+                    emitAudit("player_diff_error=" .. oneLine(err))
+                end
+            end)
+            return "LoopInGameThreadWithDelay"
+        end
+
         LoopAsync(3000, function()
             registerChatHook("loop")
             local ok, err = pcall(diffPlayers)
@@ -481,18 +596,20 @@ local function installHooks()
             end
             return false
         end)
+        return "LoopAsync"
     end)
 
     if okLoop then
-        emitAudit("registered player diff loop at 3000ms")
+        emitAudit("registered player diff loop at 3000ms via " .. oneLine(loopModeOrError))
     else
-        emitAudit("failed player diff loop registration=" .. oneLine(errLoop))
+        emitAudit("failed player diff loop registration=" .. oneLine(loopModeOrError))
     end
 
     diffPlayers()
     emitEvent("bridge_ready", {
         status = "active",
         chatHook = chatHookRegistered and "registered" or "missing",
+        chatHookTarget = chatHookTarget or "",
         joinLeaveStrategy = "player_state_diff"
     })
 end
